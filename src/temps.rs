@@ -13,7 +13,7 @@ use kpn::{Symbol, SourceConf};
 use unpackers::{tempSinkA, tempSinkB};
 
 fn main() {
-	let conf = SourceConf{Freq: 433.8e6, Rate: 1.024e6, Period: 0.0};
+	let conf = SourceConf{Freq: 434e6, Rate: 1.024e6, Period: 5e-4};
 	let t1 = ~[Body(kpn::validSymbolTemp), Tail(tempSinkA)];
 	let t2 = ~[Body(kpn::validSymbolManchester), Body(kpn::manchesterd), Tail(tempSinkB)];
 	let fs: ~[Parts] = ~[Head(bitfount::bitfount), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2)];
