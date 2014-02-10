@@ -6,4 +6,4 @@ Future extensions include improvements to efficiency, a redesign of bitfount to 
 
 This software will eventually have a web frontend accepting sensor readings via capnproto serialized announcements over a unix IPC socket and additional code to automate systems using off the shelf electrical devices as cost-effective actuators.
 
-Documentation is ongoing.
+Documentation and development are ongoing efforts.

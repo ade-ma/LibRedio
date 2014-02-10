@@ -1,5 +1,5 @@
 ARGS="-O --lib -L ."
-mkdir -p src
+mkdir -p src bin
 cd src
 rustc $ARGS rtlsdr.rs
 rustc $ARGS dsputils.rs
@@ -9,6 +9,6 @@ rustc $ARGS unpackers.rs
 rustc $ARGS instant.rs
 rustc -O -L. amt.rs
 rustc -O -L. temp.rs
-mv amt temp ..
-mv *so ..
+mv amt temp ../bin
+mv *so ../bin
 cd ..

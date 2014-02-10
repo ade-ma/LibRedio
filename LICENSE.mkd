@@ -1,0 +1,5 @@
+All code in this project is currently under a Creative Commons Non-Commercial Share-Alike License, except where otherwise noted.
+
+Copyright Ian Daniher - 2013, 2014
+
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en_US)
