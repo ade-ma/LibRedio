@@ -8,7 +8,7 @@ extern mod bitfount;
 use kpn::{Symbol, SourceConf};
 use native::task::spawn;
 
-// parts of a 1D flowgraph
+// parts of a directed acyclical flowgraph
 #[deriving(Clone)]
 pub enum Parts{
 	Head (fn (Chan<Symbol>, SourceConf) -> () ),
