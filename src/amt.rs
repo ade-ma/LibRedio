@@ -9,7 +9,7 @@ extern mod instant;
 extern mod unpackers;
 
 use instant::{Parts, Head, Body, Tail};
-use kpn::{Break, Chit, Symbol, SourceConf};
+use kpn::{Symbol, SourceConf};
 use unpackers::tempSinkB;
 
 fn main() {
