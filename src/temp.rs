@@ -9,13 +9,13 @@ extern mod instant;
 extern mod unpackers;
 
 use instant::{Parts, Head, Body, Tail};
-use kpn::{Break, Chit, Symbol, SourceConf};
+use kpn::{Symbol, SourceConf};
 use unpackers::tempSinkA;
 
 fn main() {
 	let conf = SourceConf{Freq: 433.8e6, Rate: 1.024e6, Period: 0.0};
-	let fs: ~[Parts] = ~[Head(bitfount::bitfount), Body(kpn::rle), Body(kpn::dle), Body(kpn::validSymbolTemp), Tail(tempSinkA)];
-	instant::spinUp(fs, conf);
+	let fs: ~[Parts] = ~[Head((bitfount::bitfount)), Body((kpn::rle)), Body((kpn::dle)), Body((kpn::validSymbolTemp)), Tail((tempSinkA))];
+	instant::spinUp(fs, ~[], conf);
 	loop {}
 
 }

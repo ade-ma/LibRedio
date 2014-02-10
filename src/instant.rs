@@ -9,10 +9,13 @@ use kpn::{Symbol, SourceConf};
 use native::task::spawn;
 
 // parts of a 1D flowgraph
+#[deriving(Clone)]
 pub enum Parts{
-	Head (fn (Chan<Symbol>, &SourceConf) -> () ),
-	Body (fn (Port<Symbol>, Chan<Symbol>, &SourceConf) -> () ),
-	Tail (fn (Port<Symbol>, &SourceConf) -> () ),
+	Head (fn (Chan<Symbol>, SourceConf) -> () ),
+	Body (fn (Port<Symbol>, Chan<Symbol>, SourceConf) -> () ),
+	Tail (fn (Port<Symbol>, SourceConf) -> () ),
+	Fork (fn (Port<Symbol>, Chan<Symbol>, Chan<Symbol>) -> () ),
+	Leg (~[Parts] ),
 }
 
 // guard for heterogenous vector of stream endpoints
@@ -22,28 +25,42 @@ enum Either{
 }
 
 // accepts a list of guarded functions, instantiates a 1D flowgraph
-pub fn spinUp(fs: ~[Parts], conf: SourceConf) {
-	let mut ps: ~[Either] = ~[];
+pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) {
 	// spawn ports and channels
-	for _ in range(0, fs.len()) {
+	for _ in range(0, fss.len()) {
 		let (p, c) = Chan::new();
 		ps.push(C(c));
 		ps.push(P(p));
 	}
 	// iterate over functions, shifting ports and channels out of the previously created vector
-	for &f in fs.iter() {
-		match (f, ps.shift()) {
-			(Head(source), Some(C(c))) => {
-				do spawn { source(c, &conf) } ;
+	for _ in range(0, fss.len()) {
+		match (fss.shift(), ps.shift()) {
+			(Some(Head(source)), Some(C(c))) => {
+				do spawn { source(c, conf.clone()) } ;
 			},
-			(Body(manip), Some(P(p))) => {
+			(Some(Body(manip)), Some(P(p))) => {
 				match ps.shift() {
-					Some(C(c)) => do spawn { manip(p, c, &conf) },
+					Some(C(c)) => do spawn { manip(p, c, conf.clone()) },
 					_ => ()
 				}
 			}
-			(Tail(sink), Some(P(p))) => {
-				do spawn { sink(p, &conf) } ;
+			(Some(Tail(sink)), Some(P(p))) => {
+				do spawn { sink(p, conf.clone()) } ;
+			}
+			(Some(Fork(split)), Some(P(p))) => {
+				let (p1, c1) = Chan::new();
+				let (p2, c2) = Chan::new();
+				do spawn { split(p, c1, c2) }
+				match fss.shift() {
+					Some(Leg(l)) => do spawn { spinUp(l, ~[P(p1)], conf.clone());},
+					Some(x) => fss.unshift(x),
+					_ => (),
+				}
+				match fss.shift() {
+					Some(Leg(l)) => do spawn { spinUp(l, ~[P(p2)], conf.clone());},
+					Some(x) => fss.unshift(x),
+					_ => (),
+				}
 			}
 			_ => {}
 		}

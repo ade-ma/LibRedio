@@ -11,7 +11,7 @@ use dsputils::eat;
 use kpn::{Break, Chit, Symbol, SourceConf};
 
 // support grey-and-black temperature and humidity sensors
-pub fn tempSinkA(P: Port<Symbol>, Q: &SourceConf) {
+pub fn tempSinkA(P: Port<Symbol>, Q: SourceConf) {
 	let mut xs: ~[uint] = ~[];
 	loop {
 		let x = P.recv();
@@ -34,7 +34,7 @@ pub fn tempSinkA(P: Port<Symbol>, Q: &SourceConf) {
 }
 
 // support white temperature / temperature and humidity sensors
-pub fn tempSinkB(P: Port<Symbol>, Q: &SourceConf) {
+pub fn tempSinkB(P: Port<Symbol>, Q: SourceConf) {
 	loop {
 		let mut bits: ~[uint] = ~[];
 		'recv: loop {

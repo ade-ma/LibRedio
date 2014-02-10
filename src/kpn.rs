@@ -5,6 +5,7 @@ extern mod dsputils;
 
 use std::comm::{Chan, Port};
 
+#[deriving(Eq, Clone, DeepClone)]
 pub struct SourceConf {
 	Freq: f64,
 	Rate: f64,
@@ -21,7 +22,7 @@ pub enum Symbol {
 
 
 // run length encoding
-pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf){
+pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf){
 	let mut x: Symbol = U.recv();
 	let mut i: uint = 1;
 	loop {
@@ -39,7 +40,7 @@ pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf){
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
+pub fn dle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Run(v, ct) => V.send( Dur ( v, ct as f64 / S.Rate) ),
@@ -49,7 +50,7 @@ pub fn dle(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
 }
 
 // duration length decoding
-pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
+pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(v, dur) => V.send( Run ( v, (dur * S.Rate) as uint)),
@@ -59,7 +60,7 @@ pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
 }
 
 // run length decoding
-pub fn rld(U: Port<Symbol>, V: Chan<uint>, S: &SourceConf) {
+pub fn rld(U: Port<Symbol>, V: Chan<uint>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Run(v, ct) => for _ in range(0, ct){V.send(v)},
@@ -70,7 +71,7 @@ pub fn rld(U: Port<Symbol>, V: Chan<uint>, S: &SourceConf) {
 
 
 // temperature sensor pulse duration modulated binary protocol symbol matcher
-pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
+pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(va, dura) => {
@@ -91,7 +92,7 @@ pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
 }
 
 // manchester 1/2 pulse duration to state matching
-pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
+pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(v, dur) => {
@@ -106,7 +107,7 @@ pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
 
 
 // manchester state-pair to symbol decoding
-pub fn manchesterd(U: Port<Symbol>, V: Chan<Symbol>, S: &SourceConf) {
+pub fn manchesterd(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	let mut x = U.recv();
 	let mut y = U.recv();
 	loop {

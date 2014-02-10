@@ -15,6 +15,6 @@ use unpackers::tempSinkB;
 fn main() {
 	let conf = SourceConf{Freq: 434e6, Rate: 1.024e6, Period: 5e-4};
 	let fs = ~[Head(bitfount::bitfount), Body(kpn::rle), Body(kpn::dle), Body(kpn::validSymbolManchester), Body(kpn::manchesterd), Tail(tempSinkB)];
-	instant::spinUp(fs, conf);
+	instant::spinUp(fs, ~[], conf);
 	loop {}
 }

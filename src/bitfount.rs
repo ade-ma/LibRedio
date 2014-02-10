@@ -15,7 +15,7 @@ use kpn::{Symbol, Chit, SourceConf};
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn bitfount(outChan: Chan<Symbol>, conf: &SourceConf) { //centerFreq: f32, sRate: f32) {
+pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) { //centerFreq: f32, sRate: f32) {
 
 	// rtlsdr config
 	let bSize = 512;
