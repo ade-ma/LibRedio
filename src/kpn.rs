@@ -1,5 +1,6 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of CC BY-NC-SA 4.0. */
+
 extern mod extra;
 extern mod dsputils;
 
@@ -152,7 +153,6 @@ pub fn detector(U: Port<Symbol>, V: Chan<Symbol>, W: ~[uint]) {
 		if m == W {
 			state = matched;
 			let x = Break(~"preamble match");
-			println!("{:?}", x);
 			V.send(x);
 			m = range(0,W.len()).map(|_| 0).to_owned_vec();
 		}
