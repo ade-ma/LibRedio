@@ -1,4 +1,4 @@
-ARGS="-O --lib -L ."
+ARGS="-O --crate-type=lib -L ."
 rm bin/*
 mkdir -p src bin
 cd src
@@ -10,5 +10,5 @@ rustc $ARGS unpackers.rs
 rustc $ARGS instant.rs
 rustc -O -L. temps.rs
 mv temps ../bin
-mv *so ../bin
+mv *rlib ../bin
 cd ..
