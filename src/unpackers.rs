@@ -12,7 +12,7 @@ use kpn::{Break, Chit, Symbol, SourceConf};
 
 // support grey-and-black temperature and humidity sensors
 pub fn tempSinkA(P: Port<Symbol>, Q: SourceConf) {
-	let mut packets: ~[~[uint]];
+	let mut packets: ~[~[uint]] = ~[];
 	loop {
 		let mut bits: ~[uint] = ~[];
 		'recv: loop {
@@ -24,11 +24,20 @@ pub fn tempSinkA(P: Port<Symbol>, Q: SourceConf) {
 		}
 		if bits.len() == 36 {
 			let packet = eat(bits, ~[14, 2, 12, 8]);
-			println!("p: {:x}", packet[0]);
-			println!("s: {}", packet[1]+1);
-			let x: uint = packet[2];
-			println!("t: {} degC", x as f32 / 10f32);
-			println!("h: {} %", packet[3]);
+			packets.push(packet)
+		}
+		println!("{}", packets.len());
+		if packets.len() == 4 {
+			match (&packets[0], &packets[1], &packets[2], &packets[3]) {
+				(a, b, c, d) if (b == a) || (b == c) || (b == d) => {
+					println!("p: {:x}", b[0]);
+					println!("s: {}", b[1]+1);
+					println!("t: {} degC", b[2] as f32 / 10f32);
+					println!("h: {} %", b[3]);
+				},
+				_ => ()
+			}
+			packets = ~[];
 		}
 	}
 }
