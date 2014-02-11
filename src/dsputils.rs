@@ -21,10 +21,14 @@ pub fn b2d(In: &[uint]) -> uint {
 	sum(c)
 }
 
-pub fn eat(mut x: &[uint], is: ~[uint]) -> ~[uint] {
-	is.iter().map(|&i|
-		b2d(range(0, i).map(|_| *x.shift_ref()).to_owned_vec())
-	).to_owned_vec()
+pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
+	let mut i = 0;
+	let mut out: ~[uint] = ~[];
+	for &index in is.iter() {
+		out.push(b2d(x.slice(i, i+index)));
+		i = i + index;
+	}
+	return out
 }
 
 pub fn sum<T: Num+Ord+Primitive>(In: &[T]) -> T {
