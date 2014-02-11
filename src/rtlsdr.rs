@@ -116,11 +116,11 @@ extern fn rtlsdr_callback(buf: *u8, len: u32, chan: &Chan<~[u8]>) {
 
 pub fn readAsync(dev: *c_void, blockSize: u32) -> ~Port<~[u8]> {
 	let (port, chan): (Port<~[u8]>, Chan<~[u8]>) = Chan::new();
-	do spawn {
+	spawn(proc() {
 		unsafe{
 			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, blockSize*2);
 		}
-	}
+	});
 	return ~port;
 }
 
