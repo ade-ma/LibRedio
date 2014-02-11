@@ -15,7 +15,7 @@ use kpn::{Symbol, Chit, SourceConf};
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) { //centerFreq: f32, sRate: f32) {
+pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) {
 
 	// rtlsdr config
 	let bSize = 512;
@@ -45,29 +45,34 @@ pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) { //centerFreq: f32, sR
 		let s = dsputils::sum(normalized.clone());
 		trigger -= 1;
 
+		// if the buffer's too big, throw it away to prevent OOM
 		if sampleBuffer.len() > 1000*triggerDuration as uint*bSize {
 			sampleBuffer = ~[0.0];
 			println!("{:?}", threshold);
 		}
 
+		// if we're just running, set the threshold equal to the sum of the first sample chunk
 		if threshold == 0.0 {
 			threshold = s;
 		}
 
+		// if we're not triggered, update threshold with the sum
 		if trigger < 0 {
 			threshold += s/10f32;
 			threshold -= threshold*0.2f32;
 		}
 
+		// if the sum is greater than the threshold, trigger
 		if s > threshold*4.0 {
-			//if  trigger < 0 { println!("{:?}", (trigger, s, threshold)); }
 			trigger = triggerDuration;
 		}
 
+		// if we're triggering, collect samples
 		if trigger > 1 {
 			sampleBuffer.push_all_move(normalized);
 		}
 
+		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
 			println!("{:?}", (trigger, s, threshold));
 			let filtered: ~[f32] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02));
