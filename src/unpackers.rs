@@ -26,7 +26,6 @@ pub fn tempSinkA(P: Port<Symbol>, Q: SourceConf) {
 			let packet = eat(bits, ~[14, 2, 12, 8]);
 			packets.push(packet)
 		}
-		println!("{}", packets.len());
 		if packets.len() == 4 {
 			match (&packets[0], &packets[1], &packets[2], &packets[3]) {
 				(a, b, c, d) if (b == a) || (b == c) || (b == d) => {
