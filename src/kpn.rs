@@ -181,8 +181,24 @@ pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 				x => (m.push(x))
 			}
 		}
-		for _ in range(m.len(), T) {m.push(Chit(0u))}; // zeropad, not sure if this is great or not
-		V.send(Packet(m.clone()));
+		if (m.len() + T/10) > T {
+			for _ in range(m.len(), T) {m.unshift(Chit(0u))}; // zeropad, not sure if this is great or not
+			V.send(Packet(m.clone()));
+		}
+	}
+}
+
+
+pub fn decoder(U: Port<Symbol>, V: Chan<Symbol>, Q: SourceConf, T: ~[uint]) {
+	loop {
+		match U.recv() {
+			Packet(p) => {
+					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chit(a) => { Some(a) }, _ => None }).to_owned_vec();
+					let b = dsputils::eat(bits.slice_from(0), T.clone());
+					V.send(Packet(b.move_iter().map(|x| Chit(x)).to_owned_vec()));
+			},
+			_ => ()
+		}
 	}
 }
 
@@ -209,6 +225,9 @@ pub fn unpacketizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 
 pub fn printdump(U: Port<Symbol>, S: SourceConf) {
 	loop {
-		println!("{:?}", U.recv());
+		match U.recv() {
+			Packet(x) => println!("{:?}", (x.len(), x)),
+			x => println!("{:?}", x),
+		}
 	}
 }

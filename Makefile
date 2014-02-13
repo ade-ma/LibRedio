@@ -4,7 +4,7 @@ DEPS = hellomake.h
 OBJ = hellomake.o hellofunc.o
 
 
-OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib ./lib/libunpackers*.rlib ./lib/libinstant*.rlib
+OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib
 
 ./lib/lib%.rlib: ./src/%.rs
 	$(CC) $(CFLAGS) $<
@@ -12,7 +12,7 @@ OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/lib
 all: $(OBJ)
 	mkdir -p lib bin
 	$(CC) -O -L ./ -L ./lib ./src/temps.rs
-	mv *rlib lib
+	-mv -f *rlib lib
 	mv temps bin
 
 clean:
