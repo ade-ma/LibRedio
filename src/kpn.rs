@@ -17,10 +17,11 @@ pub struct SourceConf {
 #[deriving(Eq, Clone, DeepClone)]
 pub enum Symbol {
 	Chit(uint),
+	Dbl(f64),
 	Break(~str),
 	Dur(uint, f64),
 	Run(uint, uint),
-	Packet(~[uint]),
+	Packet(~[Symbol]),
 }
 
 
@@ -172,16 +173,15 @@ pub fn tuplicator(U: Port<Symbol>, V: Chan<Symbol>, W: Chan<Symbol>){
 
 pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 	loop {
-		let mut m: ~[uint] = ~[];
+		let mut m: ~[Symbol] = ~[];
 		'acc : loop {
 			if m.len() == T {break 'acc}
 			match U.recv() {
-				Chit(x) => m.push(x),
 				Break(_) => {break 'acc}
-				_ => ()
+				x => (m.push(x))
 			}
 		}
-		for _ in range(m.len(), T) {m.push(0u)}; // zeropad, not sure if this is great or not
+		for _ in range(m.len(), T) {m.push(Chit(0u))}; // zeropad, not sure if this is great or not
 		V.send(Packet(m.clone()));
 	}
 }
