@@ -1,10 +1,11 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of CC BY-NC-SA 4.0. */
 
-extern mod extra;
+extern mod collections;
 extern mod dsputils;
 
 use std::comm::{Chan, Port};
+use collections::bitv;
 
 #[deriving(Eq, Clone, DeepClone)]
 pub struct SourceConf {
@@ -19,6 +20,7 @@ pub enum Symbol {
 	Break(~str),
 	Dur(uint, f64),
 	Run(uint, uint),
+	Packet(~[uint]),
 }
 
 
@@ -165,5 +167,38 @@ pub fn tuplicator(U: Port<Symbol>, V: Chan<Symbol>, W: Chan<Symbol>){
 		let y = U.recv();
 		V.send(y.clone());
 		W.send(y);
+	}
+}
+
+pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
+	loop {
+		let mut m: ~[uint] = ~[];
+		'acc : loop {
+			if m.len() == T {break 'acc}
+			match U.recv() {
+				Chit(x) => m.push(x),
+				Break(_) => {break 'acc}
+				_ => ()
+			}
+		}
+		for _ in range(m.len(), T) {m.push(0u)}; // zeropad, not sure if this is great or not
+		V.send(Packet(m.clone()));
+	}
+}
+
+pub fn differentiator(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+	let mut x: Symbol = U.recv();
+	loop {
+		let y = U.recv();
+		if x != y {
+			x = y;
+			V.send(x.clone());
+		}
+	}
+}
+
+pub fn printdump(U: Port<Symbol>, S: SourceConf) {
+	loop {
+		println!("{:?}", U.recv());
 	}
 }
