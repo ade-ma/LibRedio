@@ -10,12 +10,10 @@ OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/lib
 	$(CC) $(CFLAGS) $<
 
 all: $(OBJ)
+	mkdir -p lib bin
 	$(CC) -O -L ./ -L ./lib ./src/temps.rs
 	mv *rlib lib
-#rustc rtlsdr.rs
-#rustc dsputils.rs
-#rustc kpn.rs
-#rustc bitfount.rs
-#rustc unpackers.rs
-#rustc instant.rs
+	mv temps bin
 
+clean:
+	rm -rf lib bin
