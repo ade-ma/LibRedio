@@ -1,6 +1,6 @@
 This project contains software capable of using a RTLSDR software controllable radio receiver to pick up temperature and humidity readings broadcast from several different types of commercially available wireless sensors.
 
-To build the code, run ./make.sh. You will need several supporting software libraries, most notably librtlsdr, available from your distribution's package manage or from [osmocom](http://sdr.osmocom.org/trac/wiki/rtl-sdr).
+To build the code, run 'make all'. You will need several supporting software libraries, most notably librtlsdr, available from your distribution's package manage or from [osmocom](http://sdr.osmocom.org/trac/wiki/rtl-sdr).
 
 Future extensions include improvements to efficiency, a redesign of bitfount to support non-OOK devices, and unification with software for controlling remote outlets using flexible radio hardware.
 
