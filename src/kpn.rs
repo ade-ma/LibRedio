@@ -197,6 +197,16 @@ pub fn differentiator(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	}
 }
 
+pub fn unpacketizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+	loop {
+		match U.recv() {
+			Packet(x) => {for y in x.move_iter() { V.send(y) }},
+			y => V.send(y)
+		}
+	}
+}
+
+
 pub fn printdump(U: Port<Symbol>, S: SourceConf) {
 	loop {
 		println!("{:?}", U.recv());
