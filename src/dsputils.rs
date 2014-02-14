@@ -1,8 +1,8 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of CC BY-SA 4.0. */
-extern mod extra;
+extern mod num;
 
-use extra::complex;
+use num::complex;
 
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194

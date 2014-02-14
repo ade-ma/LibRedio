@@ -1,7 +1,9 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of CC BY-SA 4.0. */
-extern mod extra;
+extern mod num;
 extern mod native;
+
+use num::complex;
 
 use native::task::spawn;
 use std::str;
@@ -11,7 +13,6 @@ use std::comm::{Chan,Port};
 use std::ptr;
 use std::num;
 
-use extra::complex;
 
 #[link(name= "rtlsdr")]
 
