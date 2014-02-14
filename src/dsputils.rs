@@ -16,21 +16,6 @@ pub fn asF32 ( d: ~[complex::Complex32] ) -> ~[f32] { return d.iter().map(|&x| {
 pub fn asF64 ( d: ~[f32] ) -> ~[f64] { return d.iter().map(|&x| x as f64).collect(); }
 
 
-pub fn b2d(In: &[uint]) -> uint {
-	let c = range(0, In.len()).map(|x| (1<<(In.len()-x-1))*In[x]).to_owned_vec();
-	sum(c)
-}
-
-pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
-	let mut i = 0;
-	let mut out: ~[uint] = ~[];
-	for &index in is.iter() {
-		out.push(b2d(x.slice(i, i+index)));
-		i = i + index;
-	}
-	return out
-}
-
 pub fn sum<T: Num+Ord+Primitive>(In: &[T]) -> T {
 	let mut out: T = num::zero();
 	if In.len() != 0 {

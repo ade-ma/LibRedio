@@ -1,11 +1,7 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of CC BY-NC-SA 4.0. */
 
-extern mod collections;
-extern mod dsputils;
-
 use std::comm::{Chan, Port};
-use collections::bitv;
 
 #[deriving(Eq, Clone, DeepClone)]
 pub struct SourceConf {
@@ -191,7 +187,7 @@ pub fn decoder(U: Port<Symbol>, V: Chan<Symbol>, Q: SourceConf, T: ~[uint]) {
 		match U.recv() {
 			Packet(p) => {
 					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chit(a) => { Some(a) }, _ => None }).to_owned_vec();
-					let b = dsputils::eat(bits.slice_from(0), T.clone());
+					let b = eat(bits.slice_from(0), T.clone());
 					V.send(Packet(b.move_iter().map(|x| Chit(x)).to_owned_vec()));
 			},
 			_ => ()
@@ -227,4 +223,19 @@ pub fn printdump(U: Port<Symbol>, S: SourceConf) {
 			x => println!("{:?}", x),
 		}
 	}
+}
+
+pub fn b2d(In: &[uint]) -> uint {
+	let c = range(0, In.len()).map(|x| (1<<(In.len()-x-1))*In[x]).to_owned_vec();
+	sum(c)
+}
+
+pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
+	let mut i = 0;
+	let mut out: ~[uint] = ~[];
+	for &index in is.iter() {
+		out.push(b2d(x.slice(i, i+index)));
+		i = i + index;
+	}
+	return out
 }
