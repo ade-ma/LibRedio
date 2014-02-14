@@ -12,7 +12,7 @@ use instant::{Parts, Head, Body, Tail, Fork, Leg};
 use kpn::{Symbol, SourceConf};
 
 fn pkt36(a: Port<Symbol>, b: Chan<Symbol>, c: SourceConf) {kpn::packetizer(a,b,c,36)}
-fn pkt194(a: Port<Symbol>, b: Chan<Symbol>, c: SourceConf) {kpn::packetizer(a,b,c,194)}
+fn pkt195(a: Port<Symbol>, b: Chan<Symbol>, c: SourceConf) {kpn::packetizer(a,b,c,195)}
 fn pktTempA(a: Port<Symbol>, b: Chan<Symbol>, c: SourceConf) {kpn::decoder(a,b,c,~[14, 2, 12, 8])}
 fn pktTempB(a: Port<Symbol>, b: Chan<Symbol>, c: SourceConf) {kpn::decoder(a,b,c,~[15, 6, 5, 8, 2, 9, 1, 4, 2, 9, 4])}
 
@@ -21,7 +21,7 @@ fn main() {
 	// flowgraph leg for silver&black temp sensor
 	let t1 = ~[Body(kpn::validSymbolTemp), Body(pkt36), Body(pktTempA), Tail(kpn::printdump)];
 	// flowgraph leg for white temp sensors
-	let t2 = ~[Body(kpn::validSymbolManchester), Body(kpn::manchesterd), Body(pkt194), Body(pktTempB), Tail(kpn::printdump)];
+	let t2 = ~[Body(kpn::validSymbolManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Tail(kpn::printdump)];
 	// main flowgraph
 	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2)];
 	// spawn
