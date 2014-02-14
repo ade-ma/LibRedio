@@ -9,6 +9,7 @@ use std::libc::{c_int, c_uint, c_void};
 use std::vec;
 use std::comm::{Chan,Port};
 use std::ptr;
+use std::num;
 
 use extra::complex;
 
@@ -142,8 +143,8 @@ pub fn readSync(dev: *c_void, ct: c_uint) -> ~[u8] {
 	}
 }
 
-fn i2f(i: u8) -> f32 {(i as f32)/127.0 - 1.0}
-pub fn dataToSamples(data: ~[u8]) -> ~[complex::Complex32] {
+fn i2f(i: u8) -> f64 {i as f64/127.0 - 1.0}
+pub fn dataToSamples(data: ~[u8]) -> ~[complex::Cmplx<f64>] {
 	let samples = data.chunks(2).map(|i| complex::Cmplx{re:i2f(i[0]), im:i2f(i[1])}).collect();
 	return samples;
 }

@@ -10,14 +10,12 @@ extern mod kpn;
 
 use extra::complex;
 use std::comm::Chan;
-use kpn::{Symbol, Chit, SourceConf};
+use kpn::{Symbol, Chit, SourceConf, Dbl, Packet};
 
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) {
-
-	// rtlsdr config
+pub fn rtlSource(V: Chan<Symbol>, conf: SourceConf) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, conf.Rate as u32);
@@ -26,25 +24,37 @@ pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) {
 	rtlsdr::setFrequency(devHandle, conf.Freq as u32);
 
 	let pdata = rtlsdr::readAsync(devHandle, bSize as u32);
-
-	let triggerDuration: int = 200;
-	let mut trigger: int = 0;
-	let mut sampleBuffer: ~[f32] = ~[0.0];
-	let mut threshold: f32 = 0.0;
-
-	'main: loop {
-
-		// wait for data or exit if data pipe is closed
-		let data = match pdata.recv_opt() {
-			Some(x) => x,
+	'main : loop {
+		let samples = match pdata.recv_opt() {
+			Some(x) => rtlsdr::dataToSamples(x),
 			None => break 'main,
 		};
 
-		let samples: ~[complex::Complex32] = rtlsdr::dataToSamples(data);
-		let normalized: ~[f32] = samples.iter().map(|x| x.norm()).collect();
-		let s = dsputils::sum(normalized.clone());
-		trigger -= 1;
+		let normalized: ~[f64] = samples.iter().map(|x| x.norm()).collect();
+		V.send(Packet(normalized.move_iter().map(|x| Dbl(x)).to_owned_vec()))
+	}
+	rtlsdr::stopAsync(devHandle);
+	rtlsdr::close(devHandle);
+}
 
+pub fn trigger(U: Port<Symbol>, V: Chan<Symbol>, conf: SourceConf) {
+	let bSize = 512;
+
+	// rtlsdr config
+	let triggerDuration: int = 200;
+	let mut trigger: int = 0;
+	let mut sampleBuffer: ~[f64] = ~[0.0];
+	let mut threshold: f64 = 0.0;
+
+	'main: loop {
+		trigger -= 1;
+		let samples = match U.recv() {
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).to_owned_vec(),
+			_ => ~[],
+		};
+		let s = dsputils::sum(samples.clone());
+
+		// wait for data or exit if data pipe is closed
 		// if the buffer's too big, throw it away to prevent OOM
 		if sampleBuffer.len() > 1000*triggerDuration as uint*bSize {
 			sampleBuffer = ~[0.0];
@@ -58,8 +68,8 @@ pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) {
 
 		// if we're not triggered, update threshold with the sum
 		if trigger < 0 {
-			threshold += s/10f32;
-			threshold -= threshold*0.2f32;
+			threshold += s/10f64;
+			threshold -= threshold*0.2f64;
 		}
 
 		// if the sum is greater than the threshold, trigger
@@ -69,23 +79,21 @@ pub fn bitfount(outChan: Chan<Symbol>, conf: SourceConf) {
 
 		// if we're triggering, collect samples
 		if trigger > 1 {
-			sampleBuffer.push_all_move(normalized);
+			sampleBuffer.push_all_move(samples);
 		}
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
 			println!("{:?}", (trigger, s, threshold));
-			let filtered: ~[f32] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02));
-			let max: f32 = dsputils::max(filtered.clone());
-			let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f32) as uint }).collect();
+			let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
+			let max: f64 = dsputils::max(filtered.clone());
+			let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f64) as uint }).collect();
 			for &v in thresholded.iter() {
-				outChan.send(Chit(v));
+				V.send(Chit(v));
 			}
 			sampleBuffer = ~[];
 		}
 	}
 
 	// stop rtlsdr
-	rtlsdr::stopAsync(devHandle);
-	rtlsdr::close(devHandle);
 }

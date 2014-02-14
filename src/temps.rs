@@ -23,7 +23,7 @@ fn main() {
 	// flowgraph leg for white temp sensors
 	let t2 = ~[Body(kpn::validSymbolManchester), Body(kpn::manchesterd), Body(pkt194), Body(pktTempB), Tail(kpn::printdump)];
 	// main flowgraph
-	let fs: ~[Parts] = ~[Head(bitfount::bitfount), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2)];
+	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2)];
 	// spawn
 	instant::spinUp(fs, ~[], conf);
 	loop {}
