@@ -177,8 +177,7 @@ pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 			}
 		}
 		if (m.len() + T/10) > T {
-			println!("{:?}", m.len());
-			for _ in range(m.len(), T) {m.unshift(Chit(0u))}; // zeropad, not sure if this is great or not
+			for _ in range(m.len(), T) {m.unshift(Chit(0u))}; // zeropad and prepend - seems good idea for input, not sure about output
 			
 			V.send(Packet(m.clone()));
 		}
