@@ -19,8 +19,8 @@ pub enum Symbol {
 	Chit(uint),
 	Dbl(f64),
 	Break(~str),
-	Dur(uint, f64),
-	Run(uint, uint),
+	Dur(~Symbol, f64),
+	Run(~Symbol, uint),
 	Packet(~[Symbol]),
 }
 
@@ -32,10 +32,7 @@ pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf){
 	loop {
 		let y = U.recv();
 		if y != x {
-			match x {
-				Chit(v) => V.send( Run (v,i)),
-				_ => ()
-			}
+			V.send(Run(~x, i));
 			i = 1;
 		}
 		else {i = i + 1}
@@ -64,10 +61,10 @@ pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 }
 
 // run length decoding
-pub fn rld(U: Port<Symbol>, V: Chan<uint>, S: SourceConf) {
+pub fn rld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
-			Run(v, ct) => for _ in range(0, ct){V.send(v)},
+			Run(~v, ct) => for _ in range(0, ct){V.send(v.clone())},
 			_ => (),
 		}
 	}
@@ -78,8 +75,8 @@ pub fn rld(U: Port<Symbol>, V: Chan<uint>, S: SourceConf) {
 pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
-			Dur(va, dura) => {
-				if (va == 1) && (4.4e-4 < dura) && (dura < 6e-4) {
+			Dur(~va, dura) => {
+				if (va == Chit(1)) && (4.4e-4 < dura) && (dura < 6e-4) {
 					match U.recv() {
 						Dur(_, durb) => {
 							if (1.7e-3 < durb) && (durb < 2.2e-3) {V.send(Chit(0))}
@@ -99,10 +96,10 @@ pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	loop {
 		match U.recv() {
-			Dur(v, dur) => {
-				if ((0.7*S.Period) < dur) && ( dur < (1.3*S.Period)) { V.send(Chit(v))}
-				else if (1.7*S.Period < dur) && (dur < (2.3*S.Period)) { V.send(Chit(v)); V.send(Chit(v));}
-				else if (dur > 3.0*S.Period) && (v == 0) { V.send(Break(~"silence"))}
+			Dur(~v, dur) => {
+				if ((0.7*S.Period) < dur) && ( dur < (1.3*S.Period)) { V.send(v)}
+				else if (1.7*S.Period < dur) && (dur < (2.3*S.Period)) { V.send(v.clone()); V.send(v);}
+				else if (dur > 3.0*S.Period) && (v == Chit(0)) { V.send(Break(~"silence"))}
 			},
 			_ => ()
 		}

@@ -32,6 +32,7 @@ pub fn rtlSource(V: Chan<Symbol>, conf: SourceConf) {
 
 		let normalized: ~[f64] = samples.iter().map(|x| x.norm()).collect();
 		V.send(Packet(normalized.move_iter().map(|x| Dbl(x)).to_owned_vec()))
+		//normalized.move_iter().map(|x| V.send(Dbl(x))).to_owned_vec();
 	}
 	rtlsdr::stopAsync(devHandle);
 	rtlsdr::close(devHandle);
@@ -49,6 +50,7 @@ pub fn trigger(U: Port<Symbol>, V: Chan<Symbol>, conf: SourceConf) {
 	'main: loop {
 		trigger -= 1;
 		let samples = match U.recv() {
+
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).to_owned_vec(),
 			_ => ~[],
 		};
