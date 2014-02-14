@@ -3,6 +3,8 @@
 
 use std::comm::{Chan, Port};
 
+use std::iter::AdditiveIterator;
+
 #[deriving(Eq, Clone, DeepClone)]
 pub struct SourceConf {
 	Freq: f64,
@@ -175,7 +177,9 @@ pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 			}
 		}
 		if (m.len() + T/10) > T {
+			println!("{:?}", m.len());
 			for _ in range(m.len(), T) {m.unshift(Chit(0u))}; // zeropad, not sure if this is great or not
+			
 			V.send(Packet(m.clone()));
 		}
 	}
@@ -226,8 +230,7 @@ pub fn printdump(U: Port<Symbol>, S: SourceConf) {
 }
 
 pub fn b2d(In: &[uint]) -> uint {
-	let c = range(0, In.len()).map(|x| (1<<(In.len()-x-1))*In[x]).to_owned_vec();
-	sum(c)
+	return range(0, In.len()).map(|x| (1<<(In.len()-x-1))*In[x]).sum();
 }
 
 pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
