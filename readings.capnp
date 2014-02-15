@@ -3,7 +3,6 @@
 enum DataTypes {
 	temperature @0;
 	relativeHumidity @1;
-	stateChange @2;
 }
 
 struct Reading {
@@ -13,5 +12,3 @@ struct Reading {
 	sensorReading @3: Float64; # SI units
 	readingTimestamp @4: Float64; # seconds since epoch
 }
-
-const exampleReading: Reading = (lower = [false, true, true], sensorType = temperature, sensorConstant = 3, sensorReading = 24.4, readingTimestamp = 1.0)

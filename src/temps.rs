@@ -1,5 +1,5 @@
 /* Copyright Ian Daniher, 2013, 2014.
-   Distributed under the terms of CC BY-NC-SA 4.0. */
+   Distributed under the terms of the GPLv3. */
 extern mod extra;
 extern mod bitfount;
 extern mod dsputils;
