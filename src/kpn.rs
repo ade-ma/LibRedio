@@ -13,19 +13,19 @@ pub struct SourceConf {
 }
 
 #[deriving(Eq, Clone, DeepClone)]
-pub enum Symbol {
-	Chit(uint),
+pub enum Token {
+	Chip(uint),
 	Dbl(f64),
 	Break(~str),
-	Dur(~Symbol, f64),
-	Run(~Symbol, uint),
-	Packet(~[Symbol]),
+	Dur(~Token, f64),
+	Run(~Token, uint),
+	Packet(~[Token]),
 }
 
 
 // run length encoding
-pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf){
-	let mut x: Symbol = U.recv();
+pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf){
+	let mut x: Token = U.recv();
 	let mut i: uint = 1;
 	loop {
 		let y = U.recv();
@@ -39,7 +39,7 @@ pub fn rle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf){
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn dle(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Run(v, ct) => V.send( Dur ( v, ct as f64 / S.Rate) ),
@@ -49,7 +49,7 @@ pub fn dle(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 }
 
 // duration length decoding
-pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn dld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(v, dur) => V.send( Run ( v, (dur * S.Rate) as uint)),
@@ -59,7 +59,7 @@ pub fn dld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 }
 
 // run length decoding
-pub fn rld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn rld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Run(~v, ct) => for _ in range(0, ct){V.send(v.clone())},
@@ -70,15 +70,15 @@ pub fn rld(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 
 
 // temperature sensor pulse duration modulated binary protocol symbol matcher
-pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn validTokenTemp(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(~va, dura) => {
-				if (va == Chit(1)) && (4.4e-4 < dura) && (dura < 6e-4) {
+				if (va == Chip(1)) && (4.4e-4 < dura) && (dura < 6e-4) {
 					match U.recv() {
 						Dur(_, durb) => {
-							if (1.7e-3 < durb) && (durb < 2.2e-3) {V.send(Chit(0))}
-							else if (3.6e-3 < durb) && (durb < 4.2e-3) {V.send(Chit(1))}
+							if (1.7e-3 < durb) && (durb < 2.2e-3) {V.send(Chip(0))}
+							else if (3.6e-3 < durb) && (durb < 4.2e-3) {V.send(Chip(1))}
 							else if durb > 8.7e-3 {V.send(Break(~"silence"))}
 						},
 						_ => ()
@@ -91,13 +91,13 @@ pub fn validSymbolTemp(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 }
 
 // manchester 1/2 pulse duration to state matching
-pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn validTokenManchester(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(~v, dur) => {
 				if ((0.7*S.Period) < dur) && ( dur < (1.3*S.Period)) { V.send(v)}
 				else if (1.7*S.Period < dur) && (dur < (2.3*S.Period)) { V.send(v.clone()); V.send(v);}
-				else if (dur > 3.0*S.Period) && (v == Chit(0)) { V.send(Break(~"silence"))}
+				else if (dur > 3.0*S.Period) && (v == Chip(0)) { V.send(Break(~"silence"))}
 			},
 			_ => ()
 		}
@@ -106,14 +106,14 @@ pub fn validSymbolManchester(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 
 
 // manchester state-pair to symbol decoding
-pub fn manchesterd(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn manchesterd(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	let mut x = U.recv();
 	let mut y = U.recv();
 	loop {
 		let msg = match (x, y.clone()) {
-			(Chit(1),Chit(0)) => Chit(1),
-			(Chit(0),Chit(1)) => Chit(0),
-			(Chit(a), Chit(b)) if a == b => Break(~"manchester collision"),
+			(Chip(1),Chip(0)) => Chip(1),
+			(Chip(0),Chip(1)) => Chip(0),
+			(Chip(a), Chip(b)) if a == b => Break(~"manchester collision"),
 			(Break(b), _) =>  Break(b),
 			(_, Break(b)) =>  Break(b),
 			_ => Break(~"else")
@@ -137,14 +137,14 @@ enum state {
 }
 
 // basic convolutional detector, accepts an infinite sequence, passes all symbols after a match until a 1,0 symbol
-pub fn detector(U: Port<Symbol>, V: Chan<Symbol>, W: ~[uint]) {
+pub fn detector(U: Port<Token>, V: Chan<Token>, W: ~[uint]) {
 	// surprisingly useless unless implemented in hardware
 	let mut m: ~[uint] = range(0,W.len()).map(|_| 0).to_owned_vec();
 	let mut state = matching;
 	loop {
 		match U.recv() {
-			Chit(x) if state == matching => {m.push(x);m.shift();},
-			Chit(x) if state == matched => {V.send(Chit(x));m.push(x);m.shift();},
+			Chip(x) if state == matching => {m.push(x);m.shift();},
+			Chip(x) if state == matched => {V.send(Chip(x));m.push(x);m.shift();},
 			Break(x) => {state = matching; V.send(Break(x)); m = range(0,W.len()).map(|_| 0).to_owned_vec();},
 			_ => (),
 		}
@@ -158,7 +158,7 @@ pub fn detector(U: Port<Symbol>, V: Chan<Symbol>, W: ~[uint]) {
 }
 
 // duplicates infinite sequences
-pub fn tuplicator(U: Port<Symbol>, V: Chan<Symbol>, W: Chan<Symbol>){
+pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>){
 	loop {
 		let y = U.recv();
 		V.send(y.clone());
@@ -166,9 +166,9 @@ pub fn tuplicator(U: Port<Symbol>, V: Chan<Symbol>, W: Chan<Symbol>){
 	}
 }
 
-pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
+pub fn packetizer(U: Port<Token>, V: Chan<Token>, S: SourceConf, T: uint) {
 	loop {
-		let mut m: ~[Symbol] = ~[];
+		let mut m: ~[Token] = ~[];
 		'acc : loop {
 			if m.len() == T {break 'acc}
 			match U.recv() {
@@ -177,7 +177,7 @@ pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 			}
 		}
 		if (m.len() + T/10) > T {
-			for _ in range(m.len(), T) {m.unshift(Chit(0u))}; // zeropad and prepend - seems good idea for input, not sure about output
+			for _ in range(m.len(), T) {m.unshift(Chip(0u))}; // zeropad and prepend - seems good idea for input, not sure about output
 			
 			V.send(Packet(m.clone()));
 		}
@@ -185,21 +185,21 @@ pub fn packetizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf, T: uint) {
 }
 
 
-pub fn decoder(U: Port<Symbol>, V: Chan<Symbol>, Q: SourceConf, T: ~[uint]) {
+pub fn decoder(U: Port<Token>, V: Chan<Token>, Q: SourceConf, T: ~[uint]) {
 	loop {
 		match U.recv() {
 			Packet(p) => {
-					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chit(a) => { Some(a) }, _ => None }).to_owned_vec();
+					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).to_owned_vec();
 					let b = eat(bits.slice_from(0), T.clone());
-					V.send(Packet(b.move_iter().map(|x| Chit(x)).to_owned_vec()));
+					V.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
 			},
 			_ => ()
 		}
 	}
 }
 
-pub fn differentiator(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
-	let mut x: Symbol = U.recv();
+pub fn differentiator(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+	let mut x: Token = U.recv();
 	loop {
 		let y = U.recv();
 		if x != y {
@@ -209,7 +209,7 @@ pub fn differentiator(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 	}
 }
 
-pub fn unpacketizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
+pub fn unpacketizer(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Packet(x) => {for y in x.move_iter() { V.send(y) }},
@@ -219,7 +219,7 @@ pub fn unpacketizer(U: Port<Symbol>, V: Chan<Symbol>, S: SourceConf) {
 }
 
 
-pub fn printdump(U: Port<Symbol>, S: SourceConf) {
+pub fn printdump(U: Port<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Packet(x) => println!("{:?}", (x.len(), x)),

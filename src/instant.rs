@@ -5,23 +5,23 @@ extern mod native;
 extern mod kpn;
 extern mod bitfount;
 
-use kpn::{Symbol, SourceConf};
+use kpn::{Token, SourceConf};
 use native::task::spawn;
 
 // parts of a directed acyclical flowgraph
 #[deriving(Clone)]
 pub enum Parts{
-	Head (fn (Chan<Symbol>, SourceConf) -> () ), // stream source
-	Body (fn (Port<Symbol>, Chan<Symbol>, SourceConf) -> () ), // stream processor
-	Tail (fn (Port<Symbol>, SourceConf) -> () ), // stream sink
-	Fork (fn (Port<Symbol>, Chan<Symbol>, Chan<Symbol>) -> () ), // stream split
+	Head (fn (Chan<Token>, SourceConf) -> () ), // stream source
+	Body (fn (Port<Token>, Chan<Token>, SourceConf) -> () ), // stream processor
+	Tail (fn (Port<Token>, SourceConf) -> () ), // stream sink
+	Fork (fn (Port<Token>, Chan<Token>, Chan<Token>) -> () ), // stream split
 	Leg (~[Parts] ), // stream
 }
 
 // guard for heterogenous vector of stream endpoints
 enum Either{
-	P(Port<Symbol>),
-	C(Chan<Symbol>)
+	P(Port<Token>),
+	C(Chan<Token>)
 }
 
 // accepts a list of guarded functions, instantiates a directed acyclical flowgraph

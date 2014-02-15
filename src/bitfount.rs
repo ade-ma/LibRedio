@@ -10,12 +10,12 @@ extern mod kpn;
 
 use num::complex;
 use std::comm::Chan;
-use kpn::{Symbol, Chit, SourceConf, Dbl, Packet};
+use kpn::{Token, Chip, SourceConf, Dbl, Packet};
 
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn rtlSource(V: Chan<Symbol>, conf: SourceConf) {
+pub fn rtlSource(V: Chan<Token>, conf: SourceConf) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, conf.Rate as u32);
@@ -38,7 +38,7 @@ pub fn rtlSource(V: Chan<Symbol>, conf: SourceConf) {
 	rtlsdr::close(devHandle);
 }
 
-pub fn trigger(U: Port<Symbol>, V: Chan<Symbol>, conf: SourceConf) {
+pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 	let bSize = 512;
 
 	// rtlsdr config
@@ -91,7 +91,7 @@ pub fn trigger(U: Port<Symbol>, V: Chan<Symbol>, conf: SourceConf) {
 			let max: f64 = dsputils::max(filtered.clone());
 			let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f64) as uint }).collect();
 			for &v in thresholded.iter() {
-				V.send(Chit(v));
+				V.send(Chip(v));
 			}
 			sampleBuffer = ~[];
 		}
