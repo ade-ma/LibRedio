@@ -1,8 +1,8 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
 
-extern mod num;
-extern mod native;
+extern crate num;
+extern crate native;
 
 use num::complex;
 

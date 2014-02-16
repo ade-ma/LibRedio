@@ -1,11 +1,11 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
-extern mod extra;
-extern mod bitfount;
-extern mod dsputils;
-extern mod kpn;
-extern mod native;
-extern mod instant;
+extern crate extra;
+extern crate bitfount;
+extern crate dsputils;
+extern crate kpn;
+extern crate native;
+extern crate instant;
 
 use std::comm::{Port, Chan};
 use instant::{Parts, Head, Body, Tail, Fork, Leg};

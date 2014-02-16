@@ -3,10 +3,10 @@
 #[ crate_id = "bitfount" ];
 #[ crate_type = "lib" ];
 
-extern mod num;
-extern mod rtlsdr;
-extern mod dsputils;
-extern mod kpn;
+extern crate num;
+extern crate rtlsdr;
+extern crate dsputils;
+extern crate kpn;
 
 use num::complex;
 use std::comm::Chan;

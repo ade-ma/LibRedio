@@ -1,9 +1,9 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3 */
 
-extern mod native;
-extern mod kpn;
-extern mod bitfount;
+extern crate native;
+extern crate kpn;
+extern crate bitfount;
 
 use kpn::{Token, SourceConf};
 use native::task::spawn;
