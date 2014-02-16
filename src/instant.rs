@@ -58,6 +58,9 @@ pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) {
 						_ => (),
 					}
 				}
+			},
+			(Some(Leg(l)), Some(P(p))) => { // if we have a leg, consisting of an indeterminant number of body segments and a sink,
+				spawn(proc(){ spinUp(l, ~[P(p)], conf.clone())}); // recurse
 			}
 			_ => {}
 		}

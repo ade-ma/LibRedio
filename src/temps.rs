@@ -6,6 +6,7 @@ extern crate dsputils;
 extern crate kpn;
 extern crate native;
 extern crate instant;
+extern crate sensors;
 
 use std::comm::{Port, Chan};
 use instant::{Parts, Head, Body, Tail, Fork, Leg};
@@ -19,7 +20,7 @@ fn pktTempB(a: Port<Token>, b: Chan<Token>, c: SourceConf) {kpn::decoder(a,b,c,~
 fn main() {
 	let conf = SourceConf{Freq: 434e6, Rate: 1.024e6, Period: 5e-4};
 	// flowgraph leg for silver&black temp sensor
-	let t1 = ~[Body(kpn::validTokenTemp), Body(pkt36), Body(pktTempA), Tail(kpn::printdump)];
+	let t1 = ~[Body(kpn::validTokenTemp), Body(pkt36), Body(pktTempA), Tail(sensors::tempA)];
 	// flowgraph leg for white temp sensors
 	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Tail(kpn::printdump)];
 	// main flowgraph
