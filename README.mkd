@@ -2,8 +2,4 @@ This project contains software capable of using a RTLSDR software controllable r
 
 To build the code, run 'make all'. You will need several supporting software libraries, most notably librtlsdr, available from your distribution's package manage or from [osmocom](http://sdr.osmocom.org/trac/wiki/rtl-sdr).
 
-Future extensions include improvements to efficiency, a redesign of bitfount to support non-OOK devices, and unification with software for controlling remote outlets using flexible radio hardware.
-
-This software will eventually have a web frontend accepting sensor readings via capnproto serialized announcements over a unix IPC socket and additional code to automate systems using off the shelf electrical devices as cost-effective actuators.
-
 Documentation and development are ongoing efforts.
