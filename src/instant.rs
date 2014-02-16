@@ -15,6 +15,7 @@ pub enum Parts{
 	Body (fn (Port<Token>, Chan<Token>, SourceConf) -> () ), // stream processor
 	Tail (fn (Port<Token>, SourceConf) -> () ), // stream sink
 	Fork (fn (Port<Token>, Chan<Token>, Chan<Token>) -> () ), // stream split
+	Funnel (fn (Port<Token>, Port<Token>, Chan<Token>) -> ()), // 2-into-1 stream combiner
 	Leg (~[Parts] ), // stream
 }
 
@@ -25,13 +26,17 @@ enum Either{
 }
 
 // accepts a list of guarded functions, instantiates a directed acyclical flowgraph
-pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) {
+pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) -> Option<Either>{
 	// spawn ports and channels
 	for _ in range(0, fss.len()) {
 		let (p, c) = Chan::new();
 		ps.push(C(c));
 		ps.push(P(p));
 	}
+	let ret = match fss.iter().last().unwrap() {
+		&Body(_) => true,
+		_ => false,
+	};
 	// iterate over functions, shifting ports and channels out of the previously created vector
 	for _ in range(0, fss.len()) {
 		match (fss.shift(), ps.shift()) {
@@ -51,19 +56,29 @@ pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) {
 				let (p1, c1) = Chan::new();
 				let (p2, c2) = Chan::new();
 				spawn(proc(){ split(p, c1, c2) });
-				for p in (~[p1, p2]).move_iter() { // for each of the new ports
-					match fss.shift() {
-						Some(Leg(l)) => spawn(proc(){ spinUp(l, ~[P(p)], conf.clone());}), // spinUp the the new leg with the port
-						Some(x) => fss.unshift(x),
-						_ => (),
-					}
-				}
+				ps.unshift(P(p1)); // use this as a port for another piece
+				ps.unshift(P(p2)); // ditto
 			},
-			(Some(Leg(l)), Some(P(p))) => { // if we have a leg, consisting of an indeterminant number of body segments and a sink,
-				spawn(proc(){ spinUp(l, ~[P(p)], conf.clone())}); // recurse
+			(Some(Funnel(fun)), Some(C(c1))) => { // if we have a funnel...
+				match (ps.pop(), ps.pop()) { // grab two ports off the back of the list of endpoints
+					(Some(P(p1)), Some(P(p2))) => spawn (proc() {fun(p1, p2, c1)}),
+					_ => (),
+				}
 			}
-			_ => {}
+			(Some(Leg(l)), Some(P(p))) => { // if we have a leg, consisting of an indeterminant number of body segments and a sink,
+				match spinUp(l, ~[P(p)], conf.clone()) { // recurse
+					Some(x) => ps.push(x), // if we get something back, stick it in the back of our endpoint list
+					None => ()
+				}
+			}
+			(x,y) => println!("{:?}", (x,y)),
 		}
+	}
+	if ret {
+		return ps.shift()
+	}
+	else {
+		return None
 	}
 }
 

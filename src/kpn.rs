@@ -1,7 +1,8 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
+extern crate serialize;
 
-use std::comm::{Chan, Port};
+use std::comm::{Chan, Port, Data};
 
 use std::iter::AdditiveIterator;
 
@@ -12,7 +13,7 @@ pub struct SourceConf {
 	Period: f64
 }
 
-#[deriving(Eq, Clone, DeepClone)]
+#[deriving(Eq, Clone, DeepClone, Encodable, Decodable)]
 pub enum Token {
 	Chip(uint),
 	Dbl(f64),
@@ -163,6 +164,20 @@ pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>){
 		let y = U.recv();
 		V.send(y.clone());
 		W.send(y);
+	}
+}
+
+pub fn twofunnel(U: Port<Token>, V: Port<Token>, W: Chan<Token>){
+	// twofunnel should be parameterized for operation as an n-funnel and rebuilt with select! when possible
+	loop {
+		match U.try_recv() {
+			Data(x) => W.send(x),
+			_ => ()
+		}
+		match V.try_recv() {
+			Data(x) => W.send(x),
+			_ => ()
+		}
 	}
 }
 
