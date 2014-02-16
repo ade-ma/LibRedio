@@ -1,4 +1,3 @@
-extern crate readings;
 extern crate msgpack;
 extern crate kpn;
 extern crate extra;
@@ -41,6 +40,22 @@ pub fn tempA(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 				let l = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).to_owned_vec();
 				V.send(Packet(~[Packet(p.clone()), Chip(0), Chip(l[0]+l[1]), Dbl(l[2] as f64 / 10f64), Dbl(now.sec as f64 + now.nsec as f64 * 1e-9)]));
 				V.send(Packet(~[Packet(p.clone()), Chip(1), Chip(l[0]+l[1]), Dbl(l[3] as f64), Dbl(now.sec as f64 + now.nsec as f64 * 1e-9)]));
+			},
+			x => println!("{:?}", x),
+		}
+	}
+}
+
+pub fn tempB(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+	loop {
+		match U.recv() {
+			Packet(p) => {
+				let now = time::get_time();
+				let l = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).to_owned_vec();
+				let mut v = l[5] as f64;
+				if l[4] == 1 { v = 16.6 - 0.06*(512.0-v);}
+				else { v = v * 0.06 + 16.6 };
+				V.send(Packet(~[Packet(p.clone()), Chip(l[1]), Chip(l[2]), Dbl(v), Dbl(now.sec as f64 + now.nsec as f64 * 1e-9)]));
 			},
 			x => println!("{:?}", x),
 		}

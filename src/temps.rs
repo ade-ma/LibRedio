@@ -22,7 +22,7 @@ fn main() {
 	// flowgraph leg for silver&black temp sensor
 	let t1 = ~[Body(kpn::validTokenTemp), Body(pkt36), Body(pktTempA), Body(sensors::tempA)];
 	// flowgraph leg for white temp sensors
-	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB)];
+	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Body(sensors::tempB)];
 	// main flowgraph
 	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2), Funnel(kpn::twofunnel), Tail(sensors::udpTokenSink)];
 	// spawn

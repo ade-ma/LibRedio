@@ -1,7 +1,7 @@
 CC=rustc
 CFLAGS=-O --crate-type=lib -L ./ -L ./lib -A unused-variable -A unused-imports
 
-OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libreading*.rlib ./lib/libsensors*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib
+OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libsensors*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib
 
 all: ./lib/libmsgpack*.rlib  $(OBJ)
 	mkdir -p lib bin
