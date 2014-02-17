@@ -20,11 +20,11 @@ fn pktTempB(a: Port<Token>, b: Chan<Token>, c: SourceConf) {kpn::decoder(a,b,c,~
 fn main() {
 	let conf = SourceConf{Freq: 434e6, Rate: 1.024e6, Period: 5e-4};
 	// flowgraph leg for silver&black temp sensor
-	let t1 = ~[Body(kpn::validTokenTemp), Body(pkt36), Body(pktTempA), Body(sensors::tempA)];
+	let t1 = ~[Body(sensors::validTokenA), Body(pkt36), Body(pktTempA), Body(sensors::sensorUnpackerA)];
 	// flowgraph leg for white temp sensors
-	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Body(sensors::tempB)];
+	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Body(sensors::sensorUnpackerB)];
 	// main flowgraph
-	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2), Funnel(kpn::twofunnel), Tail(sensors::udpTokenSink)];
+	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2), Funnel(kpn::twofunnel), Tail(kpn::udpTokenSink)];
 	// spawn
 	instant::spinUp(fs, ~[], conf);
 	loop {}

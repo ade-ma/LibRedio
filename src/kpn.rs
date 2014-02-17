@@ -1,10 +1,21 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
-extern crate serialize;
 
-use std::comm::{Chan, Port, Data};
+#[feature(macro_rules)];
+
+extern crate msgpack;
+extern crate native;
+
+use native::task::spawn;
+use std::comm::{Chan, Port, Data, Select, Handle};
 
 use std::iter::AdditiveIterator;
+use msgpack::{Array, Unsigned, Double, Value, String};
+
+use std::io::net::ip::{SocketAddr, Ipv4Addr};
+use std::io::net::udp::UdpSocket;
+use std::io::{Listener, Acceptor};
+
 
 #[deriving(Eq, Clone, DeepClone)]
 pub struct SourceConf {
@@ -13,7 +24,7 @@ pub struct SourceConf {
 	Period: f64
 }
 
-#[deriving(Eq, Clone, DeepClone, Encodable, Decodable)]
+#[deriving(Eq, Clone, DeepClone)]
 pub enum Token {
 	Chip(uint),
 	Dbl(f64),
@@ -22,7 +33,6 @@ pub enum Token {
 	Run(~Token, uint),
 	Packet(~[Token]),
 }
-
 
 // run length encoding
 pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf){
@@ -69,27 +79,6 @@ pub fn rld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	}
 }
 
-
-// temperature sensor pulse duration modulated binary protocol symbol matcher
-pub fn validTokenTemp(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
-	loop {
-		match U.recv() {
-			Dur(~va, dura) => {
-				if (va == Chip(1)) && (4.4e-4 < dura) && (dura < 6e-4) {
-					match U.recv() {
-						Dur(_, durb) => {
-							if (1.7e-3 < durb) && (durb < 2.2e-3) {V.send(Chip(0))}
-							else if (3.6e-3 < durb) && (durb < 4.2e-3) {V.send(Chip(1))}
-							else if durb > 8.7e-3 {V.send(Break(~"silence"))}
-						},
-						_ => ()
-					}
-				}
-			}
-			_=> ()
-		}
-	}
-}
 
 // manchester 1/2 pulse duration to state matching
 pub fn validTokenManchester(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
@@ -167,18 +156,13 @@ pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>){
 	}
 }
 
+
+
 pub fn twofunnel(U: Port<Token>, V: Port<Token>, W: Chan<Token>){
-	// twofunnel should be parameterized for operation as an n-funnel and rebuilt with select! when possible
-	loop {
-		match U.try_recv() {
-			Data(x) => W.send(x),
-			_ => ()
-		}
-		match V.try_recv() {
-			Data(x) => W.send(x),
-			_ => ()
-		}
-	}
+	let x = W.clone();
+	let y = W.clone();
+	spawn(proc() { loop { x.send(U.recv()) }});
+	spawn(proc() { loop { y.send(V.recv()) }});
 }
 
 pub fn packetizer(U: Port<Token>, V: Chan<Token>, S: SourceConf, T: uint) {
@@ -193,7 +177,7 @@ pub fn packetizer(U: Port<Token>, V: Chan<Token>, S: SourceConf, T: uint) {
 		}
 		if (m.len() + T/10) > T {
 			for _ in range(m.len(), T) {m.unshift(Chip(0u))}; // zeropad and prepend - seems good idea for input, not sure about output
-			
+
 			V.send(Packet(m.clone()));
 		}
 	}
@@ -255,4 +239,25 @@ pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
 		i = i + index;
 	}
 	return out
+}
+
+
+// recursive encoding of a Token to a msgpack Value
+pub fn tokenToValue(U: Token) -> Value {
+	match U {
+		Packet(p) => Array(p.move_iter().map(|x| tokenToValue(x)).to_owned_vec()),
+		Dbl(x) => Double(x),
+		Chip(x) => Unsigned(x as u64),
+		Break(s) => String(s.into_bytes()),
+		Dur(~t,d) => Array(~[tokenToValue(t), tokenToValue(Dbl(d))]),
+		Run(~t,d) => Array(~[tokenToValue(t), tokenToValue(Chip(d))]),
+	}
+}
+
+pub fn udpTokenSink(U: Port<Token>, S: SourceConf) {
+	let mut sock = UdpSocket::bind(SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9998}).unwrap();
+	loop {
+		let v = tokenToValue(U.recv());
+		sock.sendto(msgpack::to_msgpack(&v), SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9999});
+	}
 }
