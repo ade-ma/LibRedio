@@ -42,7 +42,7 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 	let bSize = 512;
 
 	// rtlsdr config
-	let triggerDuration: int = 200;
+	let triggerDuration: int = 50;
 	let mut trigger: int = 0;
 	let mut sampleBuffer: ~[f64] = ~[0.0];
 	let mut threshold: f64 = 0.0;
@@ -50,7 +50,6 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 	'main: loop {
 		trigger -= 1;
 		let samples = match U.recv() {
-
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).to_owned_vec(),
 			_ => ~[],
 		};
@@ -86,16 +85,26 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
+			V.send(Packet(sampleBuffer.move_iter().map(|x| Dbl(x)).to_owned_vec()));
 			println!("{:?}", (trigger, s, threshold));
-			let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
-			let max: f64 = dsputils::max(filtered.clone());
-			let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f64) as uint }).collect();
-			for &v in thresholded.iter() {
-				V.send(Chip(v));
-			}
 			sampleBuffer = ~[];
 		}
 	}
 
 	// stop rtlsdr
+}
+
+pub fn discretize(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+	loop {
+		let sampleBuffer = match U.recv() {
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
+			_ => ~[],
+		};
+		let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
+		let max: f64 = dsputils::max(filtered.clone());
+		let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f64) as uint }).collect();
+		for &v in thresholded.iter() {
+			V.send(Chip(v));
+		}
+	}
 }
