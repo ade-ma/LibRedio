@@ -218,7 +218,7 @@ pub fn unpacketizer(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 }
 
 
-pub fn printdump(U: Port<Token>, S: SourceConf) {
+pub fn printSink(U: Port<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Packet(x) => println!("{:?}", (x.len(), x)),
