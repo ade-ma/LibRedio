@@ -69,8 +69,8 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 
 		// if we're not triggered, update threshold with the sum
 		if trigger < 0 {
-			threshold += s/10f64;
-			threshold -= threshold*0.2f64;
+			threshold += s/1000f64;
+			threshold -= threshold*0.002f64;
 		}
 
 		// if the sum is greater than the threshold, trigger
@@ -94,15 +94,25 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 	// stop rtlsdr
 }
 
-pub fn discretize(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn filter(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	loop {
 		let sampleBuffer = match U.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
 			_ => ~[],
 		};
 		let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
-		let max: f64 = dsputils::max(filtered.clone());
-		let thresholded: ~[uint] = filtered.iter().map(|&x| { (x > max/2f64) as uint }).collect();
+		V.send(Packet(filtered.move_iter().map(|x| Dbl(x)).to_owned_vec()));
+	}
+}
+
+pub fn discretize(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+	loop {
+		let sampleBuffer = match U.recv() {
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
+			_ => ~[],
+		};
+		let max: f64 = dsputils::max(sampleBuffer.slice_from(0));
+		let thresholded: ~[uint] = sampleBuffer.iter().map(|&x| { (x > max/2f64) as uint }).collect();
 		for &v in thresholded.iter() {
 			V.send(Chip(v));
 		}
