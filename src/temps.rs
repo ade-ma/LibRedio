@@ -27,5 +27,8 @@ fn main() {
 	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(bitfount::filter), Fork(kpn::tuplicator), Leg(~[Tail(vidsink::vidSink)]), Leg(parsing)];
 	// spawn
 	instant::spinUp(fs, ~[], conf);
-	loop {}
+	let (p, c) = Chan::new();
+	loop {
+		p.recv()
+	}
 }
