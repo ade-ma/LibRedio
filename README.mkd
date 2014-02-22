@@ -1,5 +1,11 @@
-This project contains software capable of using a RTLSDR software controllable radio receiver to pick up temperature and humidity readings broadcast from several different types of commercially available wireless environmental sensors.
+Tis project contains software capable of using a RTLSDR software controllable radio receiver to pick up temperature and humidity readings broadcast from several different types of commercially available wireless environmental sensors.
 
 To build the code, run 'make all'. You will need several supporting software libraries, most notably librtlsdr, available from your distribution's package manage or from [osmocom](http://sdr.osmocom.org/trac/wiki/rtl-sdr), and [rust-msgpack](https://github.com/mneumann/rust-msgpack/).
 
-Documentation and development are ongoing efforts.
+The code currently decodes two temperature sensors, creatively referred to as "sensor A" (gray) and "sensor B" (white), and provides readings, serialized via msgpack, via UDP on localhost on port 9999.
+
+The gray sensors are available [on ebay](http://www.ebay.com/itm/390752296408) from a variety of vendors, for prices as low as $8.
+
+The white sensors are available [on amazon](http://www.amazon.com/gp/product/B00C3HBRIW) as either F007TH or F007TP, for prices as low as $15.
+
+Other sensor families can be added trivially, allowing the system to support existing hardware operating on compatible frequencies.
