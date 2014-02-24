@@ -33,7 +33,7 @@ pub enum Token {
 }
 
 // run length encoding
-pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf){
+pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	let mut x: Token = U.recv();
 	let mut i: uint = 1;
 	loop {
@@ -146,7 +146,7 @@ pub fn detector(U: Port<Token>, V: Chan<Token>, W: ~[uint]) {
 }
 
 // duplicates infinite sequences
-pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>){
+pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>) {
 	loop {
 		let y = U.recv();
 		V.send(y.clone());
@@ -156,7 +156,7 @@ pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>){
 
 
 
-pub fn twofunnel(U: Port<Token>, V: Port<Token>, W: Chan<Token>){
+pub fn twofunnel(U: Port<Token>, V: Port<Token>, W: Chan<Token>) {
 	let x = W.clone();
 	let y = W.clone();
 	spawn(proc() { loop { x.send(U.recv()) }});

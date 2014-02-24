@@ -9,7 +9,7 @@ use extra::time;
 use std::comm;
 use native::task::spawn;
 
-pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32]){
+pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32]) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len: uint = data.len() as uint;
@@ -73,7 +73,7 @@ pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
 	sdl2::quit();
 }
 
-pub fn spawnVectorVisualSink() -> (comm::Chan<~[f32]>){
+pub fn spawnVectorVisualSink() -> (comm::Chan<~[f32]>) {
 	let (pData, cData): (comm::Port<~[f32]>, comm::Chan<~[f32]>) = comm::Chan::new();
 	spawn(proc(){ doWorkWithPEs(pData)});
 	return cData;
