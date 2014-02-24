@@ -5,7 +5,7 @@ extern crate dsputils;
 extern crate kpn;
 extern crate instant;
 extern crate sensors;
-extern crate vidsink;
+extern crate vidsink2;
 
 use std::comm::{Port, Chan};
 use instant::{Parts, Head, Body, Tail, Fork, Leg, Funnel};
@@ -24,7 +24,7 @@ fn main() {
 	let t2 = ~[Body(kpn::validTokenManchester), Body(kpn::manchesterd), Body(pkt195), Body(pktTempB), Body(sensors::sensorUnpackerB)];
 	// main flowgraph
 	let parsing: ~[Parts] = ~[Body(bitfount::discretize), Body(kpn::rle), Body(kpn::dle), Fork(kpn::tuplicator), Leg(t1), Leg(t2), Funnel(kpn::twofunnel), Tail(kpn::udpTokenSink)];
-	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(bitfount::filter), Fork(kpn::tuplicator), Leg(~[Tail(vidsink::vidSink)]), Leg(parsing)];
+	let fs: ~[Parts] = ~[Head(bitfount::rtlSource), Body(bitfount::trigger), Body(bitfount::filter), Fork(kpn::tuplicator), Leg(~[Tail(vidsink2::vidSink)]), Leg(parsing)];
 	// spawn
 	instant::spinUp(fs, ~[], conf);
 	let (p, c) = Chan::new();

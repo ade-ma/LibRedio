@@ -18,7 +18,6 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	data = data.iter().enumerate().filter_map(|(x, &y)|
 		if ((x as f32*decimateFactor) - (x as f32*decimateFactor).floor()) < decimateFactor { Some(y) } else { None }
 	 ).to_owned_vec();
-	//data = data.iter().enumerate().filter(|&(x, &y)| (x % (len/px + 1)) == 0).map(|(x, &y)| y).collect();
 	// black screen background
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 0, 0));
 	renderer.clear();
@@ -31,34 +30,33 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	// calculate height scale value
 	let scale: f32 = height / (2f32*(dmax-dmin));
 	assert!(width > 1.0);
-	for i in range(0, data.len()) {
+	renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 7));
+	let rs = range(0, data.len()).map(|i| {
 		let x = data[i];
 		let mut yf = height*0.5f32;
 		let mut hf = scale*x;
 		if x > 0f32 {yf -= x*scale;}
 		if x < 0f32 {hf = -1f32*hf;}
-		let r = sdl2::rect::Rect (
+		sdl2::rect::Rect (
 			((sw as f32) - width*(i as f32 + 1.0)) as i32,
 			yf as i32,
 			width as i32,
-			hf as i32);
-		println!("{:?}", &r);
-		renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 0));
-		renderer.fill_rect(&r);
-	};
+			hf as i32)
+	}).to_owned_vec();
+	renderer.fill_rects(rs.slice_from(0));
 }
 
 pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
-	let mut lastDraw: u64 = 0;
 	sdl2::init([sdl2::InitVideo]);
-	let window =  match sdl2::video::Window::new("rust-sdl2 demo: Video", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, [sdl2::video::OpenGL]) {
+	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, []) {
 		Ok(window) => window,
 		Err(err) => fail!("")
 	};
-	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]){
+	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Software]){
 		Ok(renderer) => renderer,
 		Err(err) => fail!("")
 	};
+	renderer.set_logical_size(1300, 600);
 	'main : loop {
 		match sdl2::event::poll_event() {
 			sdl2::event::QuitEvent(_) => break 'main,
@@ -67,10 +65,10 @@ pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
 		match pDataC.try_recv() {
 			comm::Data(d) => {
 				drawVectorAsBarPlot(renderer, d);
-				renderer.present()
 			}
 			_ => ()
 		}
+		renderer.present()
 	}
 	sdl2::quit();
 }
@@ -93,4 +91,3 @@ pub fn vidSink(U: Port<Token>, S: SourceConf) {
 		c.send(x.clone());
 	}
 }
-
