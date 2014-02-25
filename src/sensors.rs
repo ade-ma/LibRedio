@@ -1,7 +1,6 @@
 extern crate kpn;
-extern crate extra;
+extern crate time;
 
-use extra::time;
 use kpn::{Token, Chip, Packet, SourceConf, Dbl, Break, Dur};
 use std::comm::{Port, Chan};
 

@@ -1,9 +1,7 @@
 extern crate sdl;
-extern crate extra;
+extern crate time;
 extern crate native;
 extern crate kpn;
-
-use extra::time;
 
 use native::task::spawn;
 use std::f32;

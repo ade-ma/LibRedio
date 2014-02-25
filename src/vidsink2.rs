@@ -1,11 +1,9 @@
 extern crate sdl2;
-extern crate extra;
 extern crate dsputils;
 extern crate native;
 extern crate kpn;
 
 use kpn::{Token, SourceConf, Packet, Dbl};
-use extra::time;
 use std::comm;
 use native::task::spawn;
 
@@ -47,7 +45,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 }
 
 pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
-	sdl2::init([sdl2::InitVideo]);
+	//sdl2::init([sdl2::InitVideo]);
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, []) {
 		Ok(window) => window,
 		Err(err) => fail!("")
