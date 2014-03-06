@@ -1,12 +1,17 @@
 CC=rustc
 CFLAGS=-O --crate-type=lib -L ./lib -A unused-variable -A unused-imports
 
-OBJ = ./lib/libmsgpack*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libsensors*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib ./lib/libsdl*.rlib ./lib/libvidsink*.rlib ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib 
+OBJ = ./lib/libmsgpack*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libsensors*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib ./lib/libsdl*.rlib ./lib/libvidsink*.rlib ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib ./lib/libsndfile*.rlib ./lib/libwavio*.rlib
 
 all: $(OBJ)
 	mkdir -p bin
 	$(CC) -O -L ./lib ./src/temps.rs
 	mv temps bin
+
+./lib/libsndfile*.rlib:
+	mkdir -p lib
+	$(CC) $(CFLAGS) ./src/sndfile.rs
+	mv -f *rlib lib
 
 ./lib/libmsgpack*.rlib:
 	mkdir -p lib
