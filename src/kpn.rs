@@ -15,14 +15,14 @@ use std::io::net::udp::UdpSocket;
 use std::io::{Listener, Acceptor};
 
 
-#[deriving(Eq, Clone, DeepClone)]
+#[deriving(Eq, Clone)]
 pub struct SourceConf {
 	Freq: f64,
 	Rate: f64,
 	Period: f64
 }
 
-#[deriving(Eq, Clone, DeepClone)]
+#[deriving(Eq, Clone)]
 pub enum Token {
 	Chip(uint),
 	Dbl(f64),
