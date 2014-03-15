@@ -19,19 +19,12 @@ pub enum Parts{
 	Leg (~[Parts] ), // stream
 }
 
-// guard for heterogenous vector of stream endpoints
-enum Either{
-	P(Port<Token>),
-	C(Chan<Token>)
-}
-
-// accepts a list of guarded functions, instantiates a directed acyclical flowgraph
-pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) -> Option<Either>{
+pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Port<Token>], mut cs: ~[Chan<Token>], s: SourceConf) -> Option<Port<Token>>{
 	// spawn ports and channels
 	for _ in range(0, fss.len()) {
 		let (p, c) = Chan::new();
-		ps.push(C(c));
-		ps.push(P(p));
+		cs.push(c);
+		ps.push(p);
 	}
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
@@ -39,39 +32,42 @@ pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Either], conf: SourceConf) -> Option<
 	};
 	// iterate over functions, shifting ports and channels out of the previously created vector
 	for _ in range(0, fss.len()) {
-		match (fss.shift(), ps.shift()) {
-			(Some(Head(source)), Some(C(c))) => { // if we have a source, we should have a channel
-				spawn(proc() { source(c, conf.clone()) }) ;
+		match fss.shift() {
+			Some(Head(source)) => {
+				let c = cs.shift().unwrap();
+				spawn(proc() { source(c, s.clone()) }) ;
 			},
-			(Some(Body(manip)), Some(P(p))) => {
-				match ps.shift() {
-					Some(C(c)) => spawn(proc() { manip(p, c, conf.clone()) }),
-					_ => ()
-				}
+			Some(Body(manip)) => {
+				let c = cs.shift().unwrap();
+				let p = ps.shift().unwrap();
+				spawn(proc() { manip(p, c, s.clone()) });
 			}
-			(Some(Tail(sink)), Some(P(p))) => { // if we have a sink, we should have a port
-				spawn(proc() { sink(p, conf.clone()) });
+			Some(Tail(sink)) => {
+				let p = ps.shift().unwrap();
+				spawn(proc() { sink(p, s.clone()) });
 			}
-			(Some(Fork(split)), Some(P(p))) => { // if we have a fork, we should have a port
+			Some(Fork(split)) => {
 				let (p1, c1) = Chan::new();
 				let (p2, c2) = Chan::new();
+				let p = ps.shift().unwrap();
 				spawn(proc(){ split(p, c1, c2) });
-				ps.unshift(P(p1)); // use this as a port for another piece
-				ps.unshift(P(p2)); // ditto
+				ps.unshift(p1); // use this as a port for another piece
+				ps.unshift(p2); // ditto
 			},
-			(Some(Funnel(fun)), Some(C(c1))) => { // if we have a funnel...
-				match (ps.pop(), ps.pop()) { // grab two ports off the back of the list of endpoints
-					(Some(P(p1)), Some(P(p2))) => spawn (proc() {fun(p1, p2, c1)}),
-					_ => (),
-				}
+			Some(Funnel(fun)) => {
+				let p1 = ps.pop().unwrap();
+				let p2 = ps.pop().unwrap();
+				let c = cs.shift().unwrap();
+				spawn (proc() {fun(p1, p2, c)});
 			}
-			(Some(Leg(l)), Some(P(p))) => { // if we have a leg, consisting of an indeterminant number of body segments and a sink,
-				match spinUp(l, ~[P(p)], conf.clone()) { // recurse
+			Some(Leg(l)) => {
+				let p = ps.shift().unwrap();
+				match spinUp(l, ~[p], ~[], s.clone()) {
 					Some(x) => ps.push(x), // if we get something back, stick it in the back of our endpoint list
 					None => ()
 				}
 			}
-			(x,y) => println!("{:?}", (x,y)),
+			x => println!("{:?}", x),
 		}
 	}
 	if ret {
