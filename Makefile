@@ -1,14 +1,11 @@
 CC=rustc
 
-ifeq ($(ARCH),arm)
-CFLAGS=-O -L ./lib -A unused-variable -A unused-imports --target arm-unknown-linux-gnueabihf -C linker=arm-linux-gnueabihf-gcc -C link-args=-Wl,-rpath-link,$(PWD)/lib/
-else
 CFLAGS=-O -L ./lib -A unused-variable -A unused-imports
-endif
-
 OBJ = ./lib/libmsgpack*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libsensors*.rlib ./lib/libbitfount*.rlib ./lib/libinstant*.rlib
 
-ifneq ($(ARCH), arm)
+ifeq ($(ARCH),arm)
+CFLAGS+= --target arm-unknown-linux-gnueabihf -C linker=arm-linux-gnueabihf-gcc -C link-args=-Wl,-rpath-link,$(PWD)/lib/
+else
 OBJ += ./lib/libsdl*.rlib ./lib/libvidsink*.rlib ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib ./lib/libsndfile*.rlib ./lib/libwavio*.rlib
 endif
 
