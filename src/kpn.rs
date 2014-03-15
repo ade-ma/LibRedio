@@ -33,13 +33,13 @@ pub enum Token {
 }
 
 // run length encoding
-pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
-	let mut x: Token = U.recv();
+pub fn rle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+	let mut x: Token = u.recv();
 	let mut i: uint = 1;
 	loop {
-		let y = U.recv();
+		let y = u.recv();
 		if y != x {
-			V.send(Run(~x, i));
+			v.send(Run(~x, i));
 			i = 1;
 		}
 		else {i = i + 1}
@@ -48,30 +48,30 @@ pub fn rle(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn dle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
-			Run(v, ct) => V.send( Dur ( v, ct as f64 / S.Rate) ),
+		match u.recv() {
+			Run(x, ct) => v.send( Dur ( x, ct as f64 / s.Rate) ),
 			_ => (),
 		}
 	}
 }
 
 // duration length decoding
-pub fn dld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn dld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
-			Dur(v, dur) => V.send( Run ( v, (dur * S.Rate) as uint)),
+		match u.recv() {
+			Dur(x, dur) => v.send( Run ( x, (dur * s.Rate) as uint)),
 			_ => (),
 		}
 	}
 }
 
 // run length decoding
-pub fn rld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn rld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
-			Run(~v, ct) => for _ in range(0, ct){V.send(v.clone())},
+		match u.recv() {
+			Run(~x, ct) => for _ in range(0, ct){v.send(x.clone())},
 			_ => (),
 		}
 	}
@@ -79,13 +79,13 @@ pub fn rld(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 
 
 // manchester 1/2 pulse duration to state matching
-pub fn validTokenManchester(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn validTokenManchester(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
-			Dur(~v, dur) => {
-				if ((0.7*S.Period) < dur) && ( dur < (1.3*S.Period)) { V.send(v)}
-				else if (1.7*S.Period < dur) && (dur < (2.3*S.Period)) { V.send(v.clone()); V.send(v);}
-				else if (dur > 3.0*S.Period) && (v == Chip(0)) { V.send(Break(~"silence"))}
+		match u.recv() {
+			Dur(~x, dur) => {
+				if ((0.7*s.Period) < dur) && ( dur < (1.3*s.Period)) { v.send(x)}
+				else if (1.7*s.Period < dur) && (dur < (2.3*s.Period)) { v.send(x.clone()); v.send(x);}
+				else if (dur > 3.0*s.Period) && (x == Chip(0)) { v.send(Break(~"silence"))}
 			},
 			_ => ()
 		}
@@ -94,9 +94,9 @@ pub fn validTokenManchester(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 
 
 // manchester state-pair to symbol decoding
-pub fn manchesterd(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
-	let mut x = U.recv();
-	let mut y = U.recv();
+pub fn manchesterd(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+	let mut x = u.recv();
+	let mut y = u.recv();
 	loop {
 		let msg = match (x, y.clone()) {
 			(Chip(1),Chip(0)) => Chip(1),
@@ -108,13 +108,13 @@ pub fn manchesterd(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 		};
 		if msg == Break(~"manchester collision") {
 			x = y;
-			y = U.recv();
+			y = u.recv();
 		}
 		else {
-			x = U.recv();
-			y = U.recv();
+			x = u.recv();
+			y = u.recv();
 		}
-		V.send(msg);
+		v.send(msg);
 	}
 }
 
@@ -125,100 +125,98 @@ enum state {
 }
 
 // basic convolutional detector, accepts an infinite sequence, passes all symbols after a match until a 1,0 symbol
-pub fn detector(U: Port<Token>, V: Chan<Token>, W: ~[uint]) {
+pub fn detector(u: Port<Token>, v: Chan<Token>, W: ~[uint]) {
 	// surprisingly useless unless implemented in hardware
 	let mut m: ~[uint] = range(0,W.len()).map(|_| 0).to_owned_vec();
 	let mut state = matching;
 	loop {
-		match U.recv() {
+		match u.recv() {
 			Chip(x) if state == matching => {m.push(x);m.shift();},
-			Chip(x) if state == matched => {V.send(Chip(x));m.push(x);m.shift();},
-			Break(x) => {state = matching; V.send(Break(x)); m = range(0,W.len()).map(|_| 0).to_owned_vec();},
+			Chip(x) if state == matched => {v.send(Chip(x));m.push(x);m.shift();},
+			Break(x) => {state = matching; v.send(Break(x)); m = range(0,W.len()).map(|_| 0).to_owned_vec();},
 			_ => (),
 		}
 		if m == W {
 			state = matched;
 			let x = Break(~"preamble match");
-			V.send(x);
+			v.send(x);
 			m = range(0,W.len()).map(|_| 0).to_owned_vec();
 		}
 	}
 }
 
 // duplicates infinite sequences
-pub fn tuplicator(U: Port<Token>, V: Chan<Token>, W: Chan<Token>) {
+pub fn tuplicator(u: Port<Token>, v: Chan<Token>, W: Chan<Token>) {
 	loop {
-		let y = U.recv();
-		V.send(y.clone());
+		let y = u.recv();
+		v.send(y.clone());
 		W.send(y);
 	}
 }
 
 
 
-pub fn twofunnel(U: Port<Token>, V: Port<Token>, W: Chan<Token>) {
+pub fn twofunnel(u: Port<Token>, v: Port<Token>, W: Chan<Token>) {
 	let x = W.clone();
 	let y = W.clone();
-	spawn(proc() { loop { x.send(U.recv()) }});
-	spawn(proc() { loop { y.send(V.recv()) }});
+	spawn(proc() { loop { x.send(u.recv()) }});
+	spawn(proc() { loop { y.send(v.recv()) }});
 }
 
-pub fn packetizer(U: Port<Token>, V: Chan<Token>, S: SourceConf, T: uint) {
+pub fn packetizer(u: Port<Token>, v: Chan<Token>, s: SourceConf, T: uint) {
 	loop {
 		let mut m: ~[Token] = ~[];
 		'acc : loop {
 			if m.len() == T {break 'acc}
-			match U.recv() {
+			match u.recv() {
 				Break(_) => {break 'acc}
 				x => (m.push(x))
 			}
 		}
-		if (m.len() + T/10) > T {
-			for _ in range(m.len(), T) {m.unshift(Chip(0u))}; // zeropad and prepend - seems good idea for input, not sure about output
-
-			V.send(Packet(m.clone()));
+		if m.len() > 0 {
+			v.send(Packet(m.clone()));
 		}
 	}
 }
 
 
-pub fn decoder(U: Port<Token>, V: Chan<Token>, Q: SourceConf, T: ~[uint]) {
+pub fn decoder(u: Port<Token>, v: Chan<Token>, Q: SourceConf, T: ~[uint]) {
 	loop {
-		match U.recv() {
+		match u.recv() {
 			Packet(p) => {
 					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).to_owned_vec();
 					let b = eat(bits.slice_from(0), T.clone());
-					V.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
+					v.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
 			},
 			_ => ()
 		}
 	}
 }
 
-pub fn differentiator(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
-	let mut x: Token = U.recv();
+pub fn differentiator(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+	let mut x: Token = u.recv();
 	loop {
-		let y = U.recv();
+		let y = u.recv();
 		if x != y {
 			x = y;
-			V.send(x.clone());
+			v.send(x.clone());
 		}
 	}
 }
 
-pub fn unpacketizer(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn unpacketizer(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
-			Packet(x) => {for y in x.move_iter() { V.send(y) }},
-			y => V.send(y)
+		match u.recv() {
+			Packet(x) => {for y in x.move_iter() { v.send(y) }},
+			y => v.send(y)
 		}
 	}
 }
 
 
-pub fn printSink(U: Port<Token>, S: SourceConf) {
+pub fn printSink(u: Port<Token>, s: SourceConf) {
 	loop {
-		match U.recv() {
+		match u.recv() {
 			Packet(x) => println!("{:?}", (x.len(), x)),
 			x => println!("{:?}", x),
 		}
@@ -240,22 +238,22 @@ pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
 }
 
 
-// recursive encoding of a Token to a msgpack Value
-pub fn tokenToValue(U: Token) -> Value {
-	match U {
-		Packet(p) => Array(p.move_iter().map(|x| tokenToValue(x)).to_owned_vec()),
+// recursive encoding of a Token to a msgpack value
+pub fn tokenTovalue(u: Token) -> Value {
+	match u {
+		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).to_owned_vec()),
 		Dbl(x) => Double(x),
 		Chip(x) => Unsigned(x as u64),
 		Break(s) => String(s.into_bytes()),
-		Dur(~t,d) => Array(~[tokenToValue(t), tokenToValue(Dbl(d))]),
-		Run(~t,d) => Array(~[tokenToValue(t), tokenToValue(Chip(d))]),
+		Dur(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Dbl(d))]),
+		Run(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Chip(d))]),
 	}
 }
 
-pub fn udpTokenSink(U: Port<Token>, S: SourceConf) {
+pub fn udpTokenSink(u: Port<Token>, s: SourceConf) {
 	let mut sock = UdpSocket::bind(SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9998}).unwrap();
 	loop {
-		let v = tokenToValue(U.recv());
+		let v = tokenTovalue(u.recv());
 		sock.sendto(msgpack::to_msgpack(&v), SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9999});
 	}
 }

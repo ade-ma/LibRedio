@@ -27,7 +27,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	let &dmin: &f32 = data.iter().min().unwrap();
 	// calculate height scale value
 	let scale: f32 = height / (2f32*(dmax-dmin));
-	assert!(width > 1.0);
+	let width = if width > 1.0 { width } else { 1.0 };
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 7));
 	let rs = range(0, data.len()).map(|i| {
 		let x = data[i];
@@ -77,11 +77,11 @@ pub fn spawnVectorVisualSink() -> (comm::Chan<~[f32]>) {
 	return cData;
 }
 
-pub fn vidSink(U: Port<Token>, S: SourceConf) {
+pub fn vidSink(u: Port<Token>, s: SourceConf) {
 	let c = spawnVectorVisualSink();
-	let mut x: ~[f32] = ~[0.0f32, ..1000];
+	let mut x: ~[f32] = ~[0.0f32, ..900];
 	loop {
-		match U.recv() {
+		match u.recv() {
 			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Dbl(x) => Some(x as f32), _ => None }).to_owned_vec()},
 			Dbl(d)  => {x.pop(); x.unshift(d as f32)},
 			_ => (),

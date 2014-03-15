@@ -15,7 +15,7 @@ use kpn::{Token, Chip, SourceConf, Dbl, Packet};
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn rtlSource(V: Chan<Token>, conf: SourceConf) {
+pub fn rtlSource(v: Chan<Token>, conf: SourceConf) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, conf.Rate as u32);
@@ -31,14 +31,14 @@ pub fn rtlSource(V: Chan<Token>, conf: SourceConf) {
 		};
 
 		let normalized: ~[f64] = samples.iter().map(|x| x.norm()).collect();
-		V.send(Packet(normalized.move_iter().map(|x| Dbl(x)).to_owned_vec()))
+		v.send(Packet(normalized.move_iter().map(|x| Dbl(x)).to_owned_vec()))
 		//normalized.move_iter().map(|x| V.send(Dbl(x))).to_owned_vec();
 	}
 	rtlsdr::stopAsync(devHandle);
 	rtlsdr::close(devHandle);
 }
 
-pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
+pub fn trigger(U: Port<Token>, v: Chan<Token>, conf: SourceConf) {
 	let bSize = 512;
 
 	// rtlsdr config
@@ -85,7 +85,7 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
-			V.send(Packet(sampleBuffer.move_iter().map(|x| Dbl(x)).to_owned_vec()));
+			v.send(Packet(sampleBuffer.move_iter().map(|x| Dbl(x)).to_owned_vec()));
 			println!("{:?}", (trigger, s, threshold));
 			sampleBuffer = ~[];
 		}
@@ -94,27 +94,28 @@ pub fn trigger(U: Port<Token>, V: Chan<Token>, conf: SourceConf) {
 	// stop rtlsdr
 }
 
-pub fn filter(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn filter(U: Port<Token>, v: Chan<Token>, S: SourceConf) {
 	loop {
 		let sampleBuffer = match U.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
 			_ => ~[],
 		};
 		let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
-		V.send(Packet(filtered.move_iter().map(|x| Dbl(x)).to_owned_vec()));
+		v.send(Packet(filtered.move_iter().map(|x| Dbl(x)).to_owned_vec()));
 	}
 }
 
-pub fn discretize(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn discretize(U: Port<Token>, v: Chan<Token>, S: SourceConf) {
 	loop {
 		let sampleBuffer = match U.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
 			_ => ~[],
 		};
+		println!("{:?}", sampleBuffer.len());
 		let max: f64 = dsputils::max(sampleBuffer.slice_from(0));
 		let thresholded: ~[uint] = sampleBuffer.iter().map(|&x| { (x > max/2f64) as uint }).collect();
-		for &v in thresholded.iter() {
-			V.send(Chip(v));
+		for &x in thresholded.iter() {
+			v.send(Chip(x));
 		}
 	}
 }
