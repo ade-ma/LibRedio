@@ -9,13 +9,13 @@ extern crate dsputils;
 extern crate kpn;
 
 use num::complex;
-use std::comm::Chan;
+use std::comm::Sender;
 use kpn::{Token, Chip, SourceConf, Dbl, Packet};
 
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn rtlSource(v: Chan<Token>, conf: SourceConf) {
+pub fn rtlSource(v: Sender<Token>, conf: SourceConf) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, conf.Rate as u32);
@@ -38,7 +38,7 @@ pub fn rtlSource(v: Chan<Token>, conf: SourceConf) {
 	rtlsdr::close(devHandle);
 }
 
-pub fn trigger(U: Port<Token>, v: Chan<Token>, conf: SourceConf) {
+pub fn trigger(U: Receiver<Token>, v: Sender<Token>, conf: SourceConf) {
 	let bSize = 512;
 
 	// rtlsdr config
@@ -94,7 +94,7 @@ pub fn trigger(U: Port<Token>, v: Chan<Token>, conf: SourceConf) {
 	// stop rtlsdr
 }
 
-pub fn filter(U: Port<Token>, v: Chan<Token>, S: SourceConf) {
+pub fn filter(U: Receiver<Token>, v: Sender<Token>, S: SourceConf) {
 	loop {
 		let sampleBuffer = match U.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
@@ -105,7 +105,7 @@ pub fn filter(U: Port<Token>, v: Chan<Token>, S: SourceConf) {
 	}
 }
 
-pub fn discretize(U: Port<Token>, v: Chan<Token>, S: SourceConf) {
+pub fn discretize(U: Receiver<Token>, v: Sender<Token>, S: SourceConf) {
 	loop {
 		let sampleBuffer = match U.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),

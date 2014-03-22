@@ -23,8 +23,8 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	let width: f32 = sw as f32 / (data.len() as f32);
 	let height: f32 = sh as f32;
 	// find max value
-	let &dmax: &f32 = data.iter().max().unwrap();
-	let &dmin: &f32 = data.iter().min().unwrap();
+	let dmax = dsputils::max(data.slice_from(0));
+	let dmin = dsputils::min(data.slice_from(0));
 	// calculate height scale value
 	let scale: f32 = height / (2f32*(dmax-dmin));
 	let width = if width > 1.0 { width } else { 1.0 };
@@ -44,7 +44,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	renderer.fill_rects(rs.slice_from(0));
 }
 
-pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
+pub fn doWorkWithPEs (pDataC: comm::Receiver<~[f32]>) {
 	//sdl2::init([sdl2::InitVideo]);
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, []) {
 		Ok(window) => window,
@@ -71,13 +71,13 @@ pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
 	sdl2::quit();
 }
 
-pub fn spawnVectorVisualSink() -> (comm::Chan<~[f32]>) {
-	let (pData, cData): (comm::Port<~[f32]>, comm::Chan<~[f32]>) = comm::Chan::new();
+pub fn spawnVectorVisualSink() -> (comm::Sender<~[f32]>) {
+	let (cData, pData) = comm::channel();
 	spawn(proc(){ doWorkWithPEs(pData)});
 	return cData;
 }
 
-pub fn vidSink(u: Port<Token>, s: SourceConf) {
+pub fn vidSink(u: Receiver<Token>, s: SourceConf) {
 	let c = spawnVectorVisualSink();
 	let mut x: ~[f32] = ~[0.0f32, ..900];
 	loop {

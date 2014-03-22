@@ -9,6 +9,7 @@ use num::complex;
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
 
 use std::num;
+use std::num::Zero;
 use std::f32;
 
 // helper functions useful for FFT work
@@ -35,15 +36,13 @@ pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(In: &[T]) -> f32 {
 }
 
 #[inline(always)]
-pub fn max<T: Num+Ord+Primitive>(In: &[T]) -> T {
-	let dmax = In.iter().max().unwrap();
-	return dmax.clone()
+pub fn max<T: Float+Num>(In: &[T]) -> T {
+	In.iter().fold(In[0], |a, &b| a.max(b))
 }
 
 #[inline(always)]
-pub fn min<T: Num+Ord+Primitive>(In: &[T]) -> T {
-	let dmax = In.iter().min().unwrap();
-	return dmax.clone()
+pub fn min<T: Float+Num>(In: &[T]) -> T {
+	In.iter().fold(In[0], |a, &b| a.min(b))
 }
 
 #[inline(always)]

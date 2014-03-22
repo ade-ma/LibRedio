@@ -2,19 +2,19 @@ extern crate kpn;
 extern crate time;
 
 use kpn::{Token, Chip, Packet, SourceConf, Dbl, Break, Dur};
-use std::comm::{Port, Chan};
+use std::comm::{Receiver, Sender};
 
 // temperature sensor pulse duration modulated binary protocol symbol matcher
-pub fn validTokenA(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn validTokenA(U: Receiver<Token>, V: Sender<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Dur(~va, dura) => {
-				if (va == Chip(1)) && (4.4e-4 < dura) && (dura < 6e-4) {
+				if (va == Chip(1)) && (4e-4 < dura) && (dura < 6e-4) {
 					match U.recv() {
 						Dur(_, durb) => {
 							if (1.7e-3 < durb) && (durb < 2.2e-3) {V.send(Chip(0))}
 							else if (3.6e-3 < durb) && (durb < 4.2e-3) {V.send(Chip(1))}
-							else if durb > 8.7e-3 {V.send(Break(~"silence"))}
+							else if durb > 8.7e-3 {V.send(Break("silence"))}
 						},
 						_ => ()
 					}
@@ -25,7 +25,7 @@ pub fn validTokenA(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	}
 }
 
-pub fn sensorUnpackerA(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn sensorUnpackerA(U: Receiver<Token>, V: Sender<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Packet(p) => {
@@ -44,7 +44,7 @@ pub fn sensorUnpackerA(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
 	}
 }
 
-pub fn sensorUnpackerB(U: Port<Token>, V: Chan<Token>, S: SourceConf) {
+pub fn sensorUnpackerB(U: Receiver<Token>, V: Sender<Token>, S: SourceConf) {
 	loop {
 		match U.recv() {
 			Packet(p) => {

@@ -5,7 +5,7 @@ extern crate msgpack;
 extern crate native;
 
 use native::task::spawn;
-use std::comm::{Chan, Port, Data, Select, Handle};
+use std::comm::{Sender, Receiver, Data, Select, Handle};
 
 use std::iter::AdditiveIterator;
 use msgpack::{Array, Unsigned, Double, Value, String};
@@ -14,6 +14,9 @@ use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::net::udp::UdpSocket;
 use std::io::{Listener, Acceptor};
 
+
+use std::io::net::unix::UnixListener;
+use std::io::{Listener, Acceptor};
 
 #[deriving(Eq, Clone)]
 pub struct SourceConf {
@@ -26,14 +29,14 @@ pub struct SourceConf {
 pub enum Token {
 	Chip(uint),
 	Dbl(f64),
-	Break(~str),
+	Break(&'static str),
 	Dur(~Token, f64),
 	Run(~Token, uint),
 	Packet(~[Token]),
 }
 
 // run length encoding
-pub fn rle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn rle(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	let mut x: Token = u.recv();
 	let mut i: uint = 1;
 	loop {
@@ -48,7 +51,7 @@ pub fn rle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn dle(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
 			Run(x, ct) => v.send( Dur ( x, ct as f64 / s.Rate) ),
@@ -58,7 +61,7 @@ pub fn dle(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 }
 
 // duration length decoding
-pub fn dld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn dld(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
 			Dur(x, dur) => v.send( Run ( x, (dur * s.Rate) as uint)),
@@ -68,7 +71,7 @@ pub fn dld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 }
 
 // run length decoding
-pub fn rld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn rld(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
 			Run(~x, ct) => for _ in range(0, ct){v.send(x.clone())},
@@ -79,13 +82,13 @@ pub fn rld(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 
 
 // manchester 1/2 pulse duration to state matching
-pub fn validTokenManchester(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn validTokenManchester(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
 			Dur(~x, dur) => {
 				if ((0.7*s.Period) < dur) && ( dur < (1.3*s.Period)) { v.send(x)}
-				else if (1.7*s.Period < dur) && (dur < (2.3*s.Period)) { v.send(x.clone()); v.send(x);}
-				else if (dur > 3.0*s.Period) && (x == Chip(0)) { v.send(Break(~"silence"))}
+				else if (1.4*s.Period < dur) && (dur < (2.6*s.Period)) { v.send(x.clone()); v.send(x);}
+				else if (dur > 3.0*s.Period) && (x == Chip(0)) { v.send(Break("silence"))};
 			},
 			_ => ()
 		}
@@ -94,19 +97,20 @@ pub fn validTokenManchester(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 
 
 // manchester state-pair to symbol decoding
-pub fn manchesterd(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn manchesterd(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	let mut x = u.recv();
 	let mut y = u.recv();
 	loop {
 		let msg = match (x, y.clone()) {
-			(Chip(1),Chip(0)) => Chip(1),
-			(Chip(0),Chip(1)) => Chip(0),
-			(Chip(a), Chip(b)) if a == b => Break(~"manchester collision"),
-			(Break(b), _) =>  Break(b),
+			(Chip(1), Chip(0)) => Chip(1),
+			(Chip(0), Chip(1)) => Chip(0),
+			(Break("silence"), Chip(1)) => Chip(0),
+			(Chip(a), Chip(b)) if a == b => Break("manchester collision"),
+			(Break(b),  _) =>  Break(b),
 			(_, Break(b)) =>  Break(b),
-			_ => Break(~"else")
+			_ => Break("else")
 		};
-		if msg == Break(~"manchester collision") {
+		if msg == Break("manchester collision") {
 			x = y;
 			y = u.recv();
 		}
@@ -125,7 +129,7 @@ enum state {
 }
 
 // basic convolutional detector, accepts an infinite sequence, passes all symbols after a match until a 1,0 symbol
-pub fn detector(u: Port<Token>, v: Chan<Token>, W: ~[uint]) {
+pub fn detector(u: Receiver<Token>, v: Sender<Token>, W: ~[uint]) {
 	// surprisingly useless unless implemented in hardware
 	let mut m: ~[uint] = range(0,W.len()).map(|_| 0).to_owned_vec();
 	let mut state = matching;
@@ -138,7 +142,7 @@ pub fn detector(u: Port<Token>, v: Chan<Token>, W: ~[uint]) {
 		}
 		if m == W {
 			state = matched;
-			let x = Break(~"preamble match");
+			let x = Break("preamble match");
 			v.send(x);
 			m = range(0,W.len()).map(|_| 0).to_owned_vec();
 		}
@@ -146,7 +150,7 @@ pub fn detector(u: Port<Token>, v: Chan<Token>, W: ~[uint]) {
 }
 
 // duplicates infinite sequences
-pub fn tuplicator(u: Port<Token>, v: Chan<Token>, W: Chan<Token>) {
+pub fn tuplicator(u: Receiver<Token>, v: Sender<Token>, W: Sender<Token>) {
 	loop {
 		let y = u.recv();
 		v.send(y.clone());
@@ -156,14 +160,14 @@ pub fn tuplicator(u: Port<Token>, v: Chan<Token>, W: Chan<Token>) {
 
 
 
-pub fn twofunnel(u: Port<Token>, v: Port<Token>, W: Chan<Token>) {
+pub fn twofunnel(u: Receiver<Token>, v: Receiver<Token>, W: Sender<Token>) {
 	let x = W.clone();
 	let y = W.clone();
 	spawn(proc() { loop { x.send(u.recv()) }});
 	spawn(proc() { loop { y.send(v.recv()) }});
 }
 
-pub fn packetizer(u: Port<Token>, v: Chan<Token>, s: SourceConf, T: uint) {
+pub fn packetizer(u: Receiver<Token>, v: Sender<Token>, s: SourceConf, T: uint) {
 	loop {
 		let mut m: ~[Token] = ~[];
 		'acc : loop {
@@ -180,7 +184,7 @@ pub fn packetizer(u: Port<Token>, v: Chan<Token>, s: SourceConf, T: uint) {
 }
 
 
-pub fn decoder(u: Port<Token>, v: Chan<Token>, Q: SourceConf, T: ~[uint]) {
+pub fn decoder(u: Receiver<Token>, v: Sender<Token>, Q: SourceConf, T: ~[uint]) {
 	loop {
 		match u.recv() {
 			Packet(p) => {
@@ -193,7 +197,7 @@ pub fn decoder(u: Port<Token>, v: Chan<Token>, Q: SourceConf, T: ~[uint]) {
 	}
 }
 
-pub fn differentiator(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn differentiator(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	let mut x: Token = u.recv();
 	loop {
 		let y = u.recv();
@@ -204,7 +208,7 @@ pub fn differentiator(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 	}
 }
 
-pub fn unpacketizer(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
+pub fn unpacketizer(u: Receiver<Token>, v: Sender<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
 			Packet(x) => {for y in x.move_iter() { v.send(y) }},
@@ -214,10 +218,17 @@ pub fn unpacketizer(u: Port<Token>, v: Chan<Token>, s: SourceConf) {
 }
 
 
-pub fn printSink(u: Port<Token>, s: SourceConf) {
+pub fn printSink(u: Receiver<Token>, s: SourceConf) {
 	loop {
 		match u.recv() {
-			Packet(x) => println!("{:?}", (x.len(), x)),
+			Packet(x) => {
+				if x.len() > 1 {
+					println!("{:?}", (x.len(), x.iter().filter_map(|z| match z {
+						&Dbl(y) => Some(y as uint),
+						&Chip(y) => Some(y),
+						y => None
+					}).to_owned_vec()))
+				}},
 			x => println!("{:?}", x),
 		}
 	}
@@ -244,16 +255,28 @@ pub fn tokenTovalue(u: Token) -> Value {
 		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).to_owned_vec()),
 		Dbl(x) => Double(x),
 		Chip(x) => Unsigned(x as u64),
-		Break(s) => String(s.into_bytes()),
+		Break(s) => String(s.into_owned().into_bytes()),
 		Dur(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Dbl(d))]),
 		Run(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Chip(d))]),
 	}
 }
 
-pub fn udpTokenSink(u: Port<Token>, s: SourceConf) {
+pub fn udpTokenSink(u: Receiver<Token>, s: SourceConf) {
 	let mut sock = UdpSocket::bind(SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9998}).unwrap();
 	loop {
 		let v = tokenTovalue(u.recv());
 		sock.sendto(msgpack::to_msgpack(&v), SocketAddr{ip:Ipv4Addr(127,0,0,1), port:9999});
 	}
+}
+
+pub fn unixTokenSink(u: Receiver<Token>, s: SourceConf) {
+	let server = Path::new("/tmp/ratpakSink");
+	let mut stream = UnixListener::bind(&server);
+	let c = stream.listen().incoming().next().unwrap();
+	spawn(proc() {
+		loop {
+			let v = tokenTovalue(u.recv());
+			c.clone().write(msgpack::to_msgpack(&v));
+		}
+	});
 }

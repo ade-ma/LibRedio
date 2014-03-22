@@ -9,8 +9,8 @@ use num::complex;
 use native::task::spawn;
 use std::str;
 use std::libc::{c_int, c_uint, c_void};
-use std::vec;
-use std::comm::{Chan,Port};
+use std::slice;
+use std::comm::{Sender, Receiver, channel};
 use std::ptr;
 use std::num;
 
@@ -26,7 +26,7 @@ extern "C" {
 	fn rtlsdr_set_tuner_gain(dev: *c_void, gain: u32) -> c_int;
 	fn rtlsdr_set_tuner_gain_mode(dev: *c_void, mode: u32) -> c_int;
 	fn rtlsdr_read_sync(dev: *c_void, buf: *mut u8, len: u32, n_read: *c_int) -> c_int;
-	fn rtlsdr_read_async(dev: *c_void, cb: extern "C" fn(*u8, u32, &Chan<~[u8]>), chan: &Chan<~[u8]>, buf_num: u32, buf_len: u32) -> c_int;
+	fn rtlsdr_read_async(dev: *c_void, cb: extern "C" fn(*u8, u32, &Sender<~[u8]>), chan: &Sender<~[u8]>, buf_num: u32, buf_len: u32) -> c_int;
 	fn rtlsdr_cancel_async(dev: *c_void) -> c_int;
 	fn rtlsdr_set_sample_rate(dev: *c_void, sps: u32) -> c_int;
 	fn rtlsdr_get_sample_rate(dev: *c_void) -> u32;
@@ -110,15 +110,15 @@ pub fn setGainAuto(device: *c_void) {
 	}
 }
 
-extern fn rtlsdr_callback(buf: *u8, len: u32, chan: &Chan<~[u8]>) {
+extern fn rtlsdr_callback(buf: *u8, len: u32, chan: &Sender<~[u8]>) {
 	unsafe {
-		let data = vec::raw::from_buf_raw(buf, len as uint);
+		let data = slice::raw::from_buf_raw(buf, len as uint);
 		chan.send(data);
 	}
 }
 
-pub fn readAsync(dev: *c_void, blockSize: u32) -> ~Port<~[u8]> {
-	let (port, chan): (Port<~[u8]>, Chan<~[u8]>) = Chan::new();
+pub fn readAsync(dev: *c_void, blockSize: u32) -> ~Receiver<~[u8]> {
+	let (chan, port) = channel();
 	spawn(proc() {
 		unsafe{
 			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, blockSize*2);

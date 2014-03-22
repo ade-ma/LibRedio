@@ -3,10 +3,10 @@ extern crate kpn;
 
 use kpn::{Token, Packet, SourceConf, Dbl};
 use std::num;
-use std::comm::Chan;
+use std::comm::Sender;
 use std::io;
 
-pub fn wavSource(u: Chan<Token>, s: SourceConf) {
+pub fn wavSource(u: Sender<Token>, s: SourceConf) {
 	let mut timer = io::Timer::new().unwrap();
 	let mut sndf = sndfile::SndFile::new("./in.wav", sndfile::Read).unwrap();
 	let info = sndf.get_sndinfo();
@@ -19,7 +19,7 @@ pub fn wavSource(u: Chan<Token>, s: SourceConf) {
 		u.send(Packet(ds));
 		timer.sleep(100);
 	}
-	let (p, c) = Chan::new();
+	let (c, p) = channel();
 	p.recv();
 	c.send(1u);
 }
