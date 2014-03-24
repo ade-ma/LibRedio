@@ -18,37 +18,37 @@ pub fn asF32 ( d: ~[complex::Complex32] ) -> ~[f32] { return d.iter().map(|&x| {
 pub fn asF64 ( d: ~[f32] ) -> ~[f64] { return d.iter().map(|&x| x as f64).collect(); }
 
 
-pub fn sum<T: Num+Ord+Primitive>(in: &[T]) -> T {
+pub fn sum<T: Num+Ord+Primitive>(xs: &[T]) -> T {
 	let mut out: T = num::zero();
-	if in.len() != 0 {
-		for i in range(0, in.len()) {
-			out = out + in[i];
+	if xs.len() != 0 {
+		for i in range(0, xs.len()) {
+			out = out + xs[i];
 		}
 	}
 	return out
 }
 
 #[inline(always)]
-pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(in: &[T]) -> f32 {
-	let l = in.len() as f32;
-	let s = sum(in).to_f32().unwrap()/l;
+pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(xs: &[T]) -> f32 {
+	let l = xs.len() as f32;
+	let s = sum(xs).to_f32().unwrap()/l;
 	return s/l
 }
 
 #[inline(always)]
-pub fn max<T: Float+Num>(in: &[T]) -> T {
-	in.iter().fold(in[0], |a, &b| a.max(b))
+pub fn max<T: Float+Num>(xs: &[T]) -> T {
+	xs.iter().fold(xs[0], |a, &b| a.max(b))
 }
 
 #[inline(always)]
-pub fn min<T: Float+Num>(in: &[T]) -> T {
-	in.iter().fold(in[0], |a, &b| a.min(b))
+pub fn min<T: Float+Num>(xs: &[T]) -> T {
+	xs.iter().fold(xs[0], |a, &b| a.min(b))
 }
 
 #[inline(always)]
-pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(A: ~[T], B: ~[T]) -> ~[T] {
-	A.windows(B.len()).map(|x| {
-		sum(range(0, B.len()).map(|i| {x[i]*B[i]}).to_owned_vec())
+pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: ~[T], v: ~[T]) -> ~[T] {
+	u.windows(v.len()).map(|x| {
+		sum(range(0, v.len()).map(|i| {x[i]*v[i]}).to_owned_vec())
 	}).to_owned_vec()
 }
 

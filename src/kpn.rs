@@ -3,6 +3,7 @@
 
 extern crate msgpack;
 extern crate native;
+extern crate dsputils;
 
 use native::task::spawn;
 use std::comm::{Sender, Receiver, Data, Select, Handle};
@@ -75,12 +76,12 @@ pub fn rld(u: Receiver<Token>, v: Sender<Token>) {
 
 
 // manchester 1/2 pulse duration to state matching
-pub fn validTokenManchester(u: Receiver<Token>, v: Sender<Token>, period: f64) {
+pub fn validTokenManchester(u: Receiver<Token>, v: Sender<Token>, period: f64, epsilon: f64) {
 	loop {
 		match u.recv() {
 			Dur(~x, dur) => {
-				if ((0.8*period) < dur) && ( dur < (1.2*period)) { v.send(x)}
-				else if (1.6*period < dur) && (dur < (2.4*period)) { v.send(x.clone()); v.send(x);}
+				if ((1.0-epsilon)*period < dur) && ( dur < ((1.0+epsilon)*period)) { v.send(x)}
+				else if ((2.0-epsilon)*period < dur) && (dur < (2.0+epsilon)*period) { v.send(x.clone()); v.send(x);}
 				else if (dur > 4.0*period) && (x == Chip(0)) { v.send(Break("silence"))};
 			},
 			_ => ()
@@ -147,17 +148,13 @@ pub fn packetizer(u: Receiver<Token>, v: Sender<Token>, t: uint) {
 	loop {
 		let mut m: ~[Token] = ~[];
 		'acc : loop {
-			if m.len() == t {break 'acc}
 			match u.recv() {
 				Break(_) => {break 'acc}
 				x => (m.push(x))
 			}
 		}
-		if m.len() > 0 {
-			if m.iter().map(|x| { match x { &Chip(1) => 1, _ => 0 }}).sum() != 0 {
-				v.send(Packet(m.clone()));
-			}
-		}
+		if m.len() == t {v.send(Packet(m.clone()))}
+		else if m.len() > 10 { println!("{:?}", m.len()) };
 	}
 }
 
@@ -166,9 +163,11 @@ pub fn decoder(u: Receiver<Token>, v: Sender<Token>, t: ~[uint]) {
 	loop {
 		match u.recv() {
 			Packet(p) => {
-					let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).to_owned_vec();
-					let b = eat(bits.slice_from(0), t.clone());
-					v.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
+					if p.len() >= dsputils::sum(t.slice_from(0)) {
+						let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).to_owned_vec();
+						let b = eat(bits.slice_from(0), t.clone());
+						v.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
+					}
 			},
 			_ => ()
 		}
@@ -200,7 +199,7 @@ pub fn printSink(u: Receiver<Token>) {
 	loop {
 		match u.recv() {
 			Packet(x) => {
-				if x.len() > 10 {
+				if x.len() > 2 {
 					println!("{:?}", (x.len(), x.iter().filter_map(|z| match z {
 						&Dbl(y) => Some(y as uint),
 						&Chip(y) => Some(y),
@@ -212,8 +211,8 @@ pub fn printSink(u: Receiver<Token>) {
 	}
 }
 
-pub fn b2d(in: &[uint]) -> uint {
-	return range(0, in.len()).map(|x| (1<<(in.len()-x-1))*in[x]).sum();
+pub fn b2d(xs: &[uint]) -> uint {
+	return range(0, xs.len()).map(|i| (1<<(xs.len()-i-1))*xs[i]).sum();
 }
 
 pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {

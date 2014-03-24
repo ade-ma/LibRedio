@@ -17,7 +17,9 @@ pub enum Parts{
 	HeadDoubleDoubleDouble (fn (Sender<Token>, f64, f64, f64) -> (), f64, f64, f64 ),
 	Body (fn (Receiver<Token>, Sender<Token>) -> () ),
 	BodyUint (fn (Receiver<Token>, Sender<Token>, uint) -> (), uint ),
+	BodyVecUint (fn (Receiver<Token>, Sender<Token>, ~[uint]) -> (), ~[uint]),
 	BodyDouble (fn (Receiver<Token>, Sender<Token>, f64) -> (), f64),
+	BodyVecDouble (fn (Receiver<Token>, Sender<Token>, ~[f64]) -> (), ~[f64]),
 	BodyDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64) -> (), f64, f64),
 	BodyDoubleDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64, f64) -> (), f64, f64, f64),
 	Tail (fn (Receiver<Token>) -> () ), // stream g
@@ -31,7 +33,9 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
 		&BodyUint(_, _) => true,
+		&BodyVecUint(_, _) => true,
 		&BodyDouble(_, _) => true,
+		&BodyVecDouble(_, _) => true,
 		&BodyDoubleDouble(_, _, _) => true,
 		&BodyDoubleDoubleDouble(_, _, _, _) => true,
 		_ => false,
@@ -79,9 +83,25 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				let p = ps.shift().unwrap();
 				ps.unshift(pn);
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c,v) });
+				task::spawn_opts(def, proc() { g(p, c, v) });
+			}
+			BodyVecUint(g, v) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
+				let p = ps.shift().unwrap();
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c, v) });
 			}
 			BodyDouble(g, v) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
+				let p = ps.shift().unwrap();
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c, v) });
+			}
+			BodyVecDouble(g, v) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
