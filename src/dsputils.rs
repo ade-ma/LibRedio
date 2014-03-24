@@ -9,6 +9,7 @@ use num::complex;
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
 
 use std::num;
+use std::iter::AdditiveIterator;
 use std::num::Zero;
 use std::f32;
 
@@ -46,10 +47,8 @@ pub fn min<T: Float+Num>(xs: &[T]) -> T {
 }
 
 #[inline(always)]
-pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: ~[T], v: ~[T]) -> ~[T] {
-	u.windows(v.len()).map(|x| {
-		sum(range(0, v.len()).map(|i| {x[i]*v[i]}).to_owned_vec())
-	}).to_owned_vec()
+pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: ~[T], v: &[T]) -> ~[T] {
+	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).sum()}).collect()
 }
 
 // filter code accepts:

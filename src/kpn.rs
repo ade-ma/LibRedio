@@ -126,20 +126,20 @@ enum state {
 // basic convolutional detector, accepts an infinite sequence, passes all symbols after a match until a 1,0 symbol
 pub fn detector(u: Receiver<Token>, v: Sender<Token>, w: ~[uint]) {
 	// surprisingly useless unless implemented in hardware
-	let mut m: ~[uint] = range(0,w.len()).map(|_| 0).to_owned_vec();
+	let mut m: ~[uint] = range(0,w.len()).map(|_| 0).collect();
 	let mut state = matching;
 	loop {
 		match u.recv() {
 			Chip(x) if state == matching => {m.push(x);m.shift();},
 			Chip(x) if state == matched => {v.send(Chip(x));m.push(x);m.shift();},
-			Break(x) => {state = matching; v.send(Break(x)); m = range(0,w.len()).map(|_| 0).to_owned_vec();},
+			Break(x) => {state = matching; v.send(Break(x)); m = range(0,w.len()).map(|_| 0).collect();},
 			_ => (),
 		}
 		if m == w {
 			state = matched;
 			let x = Break("preamble match");
 			v.send(x);
-			m = range(0,w.len()).map(|_| 0).to_owned_vec();
+			m = range(0,w.len()).map(|_| 0).collect();
 		}
 	}
 }
@@ -164,9 +164,9 @@ pub fn decoder(u: Receiver<Token>, v: Sender<Token>, t: ~[uint]) {
 		match u.recv() {
 			Packet(p) => {
 					if p.len() >= dsputils::sum(t.slice_from(0)) {
-						let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).to_owned_vec();
+						let bits: ~[uint] = p.move_iter().filter_map(|x| match x { Chip(a) => { Some(a) }, _ => None }).collect();
 						let b = eat(bits.slice_from(0), t.clone());
-						v.send(Packet(b.move_iter().map(|x| Chip(x)).to_owned_vec()));
+						v.send(Packet(b.move_iter().map(|x| Chip(x)).collect()));
 					}
 			},
 			_ => ()
@@ -200,11 +200,12 @@ pub fn printSink(u: Receiver<Token>) {
 		match u.recv() {
 			Packet(x) => {
 				if x.len() > 2 {
-					println!("{:?}", (x.len(), x.iter().filter_map(|z| match z {
+					let y: ~[uint] = x.iter().filter_map(|z| match z {
 						&Dbl(y) => Some(y as uint),
 						&Chip(y) => Some(y),
 						y => None
-					}).to_owned_vec()))
+					}).collect();
+					println!("{:?}", (y.len(), y));
 				}},
 			x => println!("{:?}", x),
 		}
@@ -229,7 +230,7 @@ pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
 // recursive encoding of a Token to a msgpack value
 pub fn tokenTovalue(u: Token) -> Value {
 	match u {
-		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).to_owned_vec()),
+		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).collect()),
 		Dbl(x) => Double(x),
 		Chip(x) => Unsigned(x as u64),
 		Break(s) => String(s.into_owned().into_bytes()),

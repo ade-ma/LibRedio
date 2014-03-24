@@ -32,7 +32,7 @@ pub fn sensorUnpackerA(u: Receiver<Token>, v: Sender<Token>) {
 			Packet(p) => {
 				let now = time::get_time();
 				let t: f64 = now.sec as f64 + now.nsec as f64 * 1e-9;
-				let l = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).to_owned_vec();
+				let l: ~[uint] = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).collect();
 				v.send(Packet(~[Packet(p.clone()),
 					Chip(0), Chip(l[0]+l[1]), Dbl(l[2] as f64 / 10f64),
 					Dbl(t)]));
@@ -51,7 +51,7 @@ pub fn sensorUnpackerB(u: Receiver<Token>, v: Sender<Token>) {
 			Packet(p) => {
 				let now = time::get_time();
 				let t: f64 = now.sec as f64 + now.nsec as f64 * 1e-9;
-				let l = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).to_owned_vec();
+				let l: ~[uint] = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).collect();
 				let mut x = l[5] as f64;
 				if l[4] == 1 { x = 16.6 - 0.057*(512.0-x);} // magic hardware specific numbers
 				else { x = x * 0.057 + 16.6 };

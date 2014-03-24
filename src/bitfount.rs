@@ -31,8 +31,8 @@ pub fn rtlSource(v: Sender<Token>, cFreq: f64, gain: f64, sRate: f64) {
 		};
 
 		let normalized: ~[f64] = samples.iter().map(|x| x.norm()).collect();
-		v.send(Packet(normalized.move_iter().map(|x| Dbl(x)).to_owned_vec()))
-		//normalized.move_iter().map(|x| V.send(Dbl(x))).to_owned_vec();
+		v.send(Packet(normalized.move_iter().map(|x| Dbl(x)).collect()))
+		//normalized.move_iter().map(|x| V.send(Dbl(x))).collect();
 	}
 	rtlsdr::stopAsync(devHandle);
 	rtlsdr::close(devHandle);
@@ -50,7 +50,7 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 	'main: loop {
 		trigger -= 1;
 		let samples = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).to_owned_vec(),
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).collect(),
 			_ => ~[],
 		};
 		let s = dsputils::sum(samples.clone());
@@ -85,7 +85,7 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
-			v.send(Packet(sampleBuffer.move_iter().map(|x| Dbl(x)).to_owned_vec()));
+			v.send(Packet(sampleBuffer.move_iter().map(|x| Dbl(x)).collect()));
 			println!("{:?}", (trigger, s, threshold));
 			sampleBuffer = ~[];
 		}
@@ -95,20 +95,21 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 }
 
 pub fn filter(u: Receiver<Token>, v: Sender<Token>) {
+	let lpf: ~[f64] = dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).collect();
 	loop {
 		let sampleBuffer = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).collect(),
 			_ => ~[],
 		};
-		let filtered: ~[f64] = dsputils::convolve(sampleBuffer, dsputils::lpf(63, 0.02).move_iter().map(|x| x as f64).to_owned_vec());
-		v.send(Packet(filtered.move_iter().map(|x| Dbl(x)).to_owned_vec()));
+		let filtered: ~[f64] = dsputils::convolve(sampleBuffer, lpf.slice_from(0));
+		v.send(Packet(filtered.move_iter().map(|x| Dbl(x)).collect()));
 	}
 }
 
 pub fn discretize(u: Receiver<Token>, v: Sender<Token>) {
 	loop {
 		let sampleBuffer = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
+			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).collect(),
 			_ => ~[],
 		};
 		println!("{:?}", sampleBuffer.len());
