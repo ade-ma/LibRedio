@@ -10,18 +10,18 @@ extern crate kpn;
 
 use num::complex;
 use std::comm::Sender;
-use kpn::{Token, Chip, SourceConf, Dbl, Packet};
+use kpn::{Token, Chip, Dbl, Packet};
 
 // this is a stop-gap solution for demodulation - right now, it just triggers and discretizes against midpoint, outputting a sequence of symbols
 // this works adequately for OOK / manchester encoded symbols, but will require refactoring to support FSK-type protocols
 
-pub fn rtlSource(v: Sender<Token>, conf: SourceConf) {
+pub fn rtlSource(v: Sender<Token>, cFreq: f64, gain: f64, sRate: f64) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
-	rtlsdr::setSampleRate(devHandle, conf.Rate as u32);
+	rtlsdr::setSampleRate(devHandle, sRate as u32);
 	rtlsdr::clearBuffer(devHandle);
-	rtlsdr::setGain(devHandle, 402);
-	rtlsdr::setFrequency(devHandle, conf.Freq as u32);
+	rtlsdr::setGain(devHandle, (gain * 10.0) as u32);
+	rtlsdr::setFrequency(devHandle, cFreq as u32);
 
 	let pdata = rtlsdr::readAsync(devHandle, bSize as u32);
 	'main : loop {
@@ -38,7 +38,7 @@ pub fn rtlSource(v: Sender<Token>, conf: SourceConf) {
 	rtlsdr::close(devHandle);
 }
 
-pub fn trigger(U: Receiver<Token>, v: Sender<Token>, conf: SourceConf) {
+pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 	let bSize = 512;
 
 	// rtlsdr config
@@ -49,7 +49,7 @@ pub fn trigger(U: Receiver<Token>, v: Sender<Token>, conf: SourceConf) {
 
 	'main: loop {
 		trigger -= 1;
-		let samples = match U.recv() {
+		let samples = match u.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None }).to_owned_vec(),
 			_ => ~[],
 		};
@@ -94,9 +94,9 @@ pub fn trigger(U: Receiver<Token>, v: Sender<Token>, conf: SourceConf) {
 	// stop rtlsdr
 }
 
-pub fn filter(U: Receiver<Token>, v: Sender<Token>, S: SourceConf) {
+pub fn filter(u: Receiver<Token>, v: Sender<Token>) {
 	loop {
-		let sampleBuffer = match U.recv() {
+		let sampleBuffer = match u.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
 			_ => ~[],
 		};
@@ -105,9 +105,9 @@ pub fn filter(U: Receiver<Token>, v: Sender<Token>, S: SourceConf) {
 	}
 }
 
-pub fn discretize(U: Receiver<Token>, v: Sender<Token>, S: SourceConf) {
+pub fn discretize(u: Receiver<Token>, v: Sender<Token>) {
 	loop {
-		let sampleBuffer = match U.recv() {
+		let sampleBuffer = match u.recv() {
 			Packet(p) => p.move_iter().filter_map(|x| match x { Dbl(d) => Some(d), _ => None}).to_owned_vec(),
 			_ => ~[],
 		};

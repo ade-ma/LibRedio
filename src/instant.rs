@@ -5,70 +5,155 @@ extern crate native;
 extern crate kpn;
 extern crate bitfount;
 
-use kpn::{Token, SourceConf};
-use native::task::spawn;
+use kpn::Token;
+use native::task;
 
 // parts of a directed acyclical flowgraph
 #[deriving(Clone)]
 pub enum Parts{
-	Head (fn (Sender<Token>, SourceConf) -> () ), // stream source
-	Body (fn (Receiver<Token>, Sender<Token>, SourceConf) -> () ), // stream processor
-	Mimo (uint, uint, fn(~[Receiver<Token>], ~[Sender<Token>]) -> () ),
-	Tail (fn (Receiver<Token>, SourceConf) -> () ), // stream sink
-	Fork (fn (Receiver<Token>, Sender<Token>, Sender<Token>) -> () ), // stream split
-	Funnel (fn (Receiver<Token>, Receiver<Token>, Sender<Token>) -> ()), // 2-into-1 stream combiner
+	Head (fn (Sender<Token>) -> () ),
+	HeadDouble (fn (Sender<Token>, f64) -> (), f64 ),
+	HeadDoubleDouble (fn (Sender<Token>, f64, f64) -> (), f64, f64 ),
+	HeadDoubleDoubleDouble (fn (Sender<Token>, f64, f64, f64) -> (), f64, f64, f64 ),
+	Body (fn (Receiver<Token>, Sender<Token>) -> () ),
+	BodyUint (fn (Receiver<Token>, Sender<Token>, uint) -> (), uint ),
+	BodyDouble (fn (Receiver<Token>, Sender<Token>, f64) -> (), f64),
+	BodyDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64) -> (), f64, f64),
+	BodyDoubleDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64, f64) -> (), f64, f64, f64),
+	Tail (fn (Receiver<Token>) -> () ), // stream g
+	Fork,
+	Funnel,
 	Leg (~[Parts] ),
 }
 
-pub fn spinUp(mut fss: ~[Parts], mut ps: ~[Receiver<Token>], mut cs: ~[Sender<Token>], s: SourceConf) -> Option<Receiver<Token>>{
+pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Token>>{
 	// spawn ports and channels
-	for _ in range(0, fss.len()) {
-		let (c, p) = channel();
-		cs.push(c);
-		ps.push(p);
-	}
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
+		&BodyUint(_, _) => true,
+		&BodyDouble(_, _) => true,
+		&BodyDoubleDouble(_, _, _) => true,
+		&BodyDoubleDoubleDouble(_, _, _, _) => true,
 		_ => false,
 	};
 	// iterate over functions
 	for f in fss.move_iter() {
+		let mut def = std::task::TaskOpts::new();
 		match f {
-			Head(source) => {
-				let c = cs.shift().unwrap();
-				spawn(proc() { source(c, s.clone()) });
+			Head(g) => {
+				let (c, p) = channel();
+				ps.push(p);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(c) });
 			},
-			Body(manip) => {
-				let c = cs.shift().unwrap();
+			HeadDouble(g, v) => {
+				let (c, p) = channel();
+				ps.push(p);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(c, v) });
+			}
+			HeadDoubleDouble(g, v1, v2) => {
+				let (c, p) = channel();
+				ps.unshift(p);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(c, v1, v2) });
+			}
+			HeadDoubleDoubleDouble(g, v1, v2, v3) => {
+				println!("head: {:?}", ps.len());
+				let (c, p) = channel();
+				ps.unshift(p);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(c, v1, v2, v3) });
+			}
+			Body(g) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
-				spawn(proc() { manip(p, c, s.clone()) });
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c) });
 			}
-			Mimo(i, o, mimo) => {
-				let p = range(0, i).map(|_| { ps.shift().unwrap() }).to_owned_vec();
-				let c = range(0, o).map(|_| { cs.shift().unwrap() }).to_owned_vec();
-				spawn(proc() { mimo(p, c) });
-			}
-			Tail(sink) => {
+			BodyUint(g, v) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
-				spawn(proc() { sink(p, s.clone()) });
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c,v) });
 			}
-			Fork(split) => {
+			BodyDouble(g, v) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
+				let p = ps.shift().unwrap();
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c, v) });
+			}
+			BodyDoubleDouble(g, v1, v2) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
+				let p = ps.shift().unwrap();
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c, v1, v2) });
+			}
+			BodyDoubleDoubleDouble(g, v1, v2, v3) => {
+				println!("body: {:?}", ps.len());
+				let (c, pn) = channel();
+				let p = ps.shift().unwrap();
+				ps.unshift(pn);
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				task::spawn_opts(def, proc() { g(p, c, v1, v2, v3) });
+			}
+			Tail(g) => {
+				println!("tail: {:?}", ps.len());
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
+				let p = ps.pop().unwrap();
+				task::spawn_opts(def, proc() { g(p) });
+			}
+			Fork => {
+				println!("fork: {:?}", ps.len());
+				let p = ps.shift().unwrap();
 				let (c1, p1) = channel();
 				let (c2, p2) = channel();
-				let p = ps.shift().unwrap();
-				spawn(proc(){ split(p, c1, c2) });
+				def.name = Some(std::str::Owned(~"Fork"));
+				task::spawn_opts(def, proc() {
+					loop {
+						let y = p.recv();
+						c1.send(y.clone());
+						c2.send(y);
+					}
+				});
 				ps.unshift(p1);
 				ps.unshift(p2);
-			},
-			Funnel(fun) => {
-				let p1 = ps.pop().unwrap(); // if we combine, pull two things off the back of our endpoint stack
+			}
+			Funnel => {
+				println!("funnel: {:?}", ps.len());
+				def.name = Some(std::str::Owned(~"Funnel"));
+				let p1 = ps.pop().unwrap();
 				let p2 = ps.pop().unwrap();
-				let c = cs.shift().unwrap();
-				spawn (proc() {fun(p1, p2, c)});
+				let (c, p) = channel();
+				ps.push(p);
+				let x = c.clone();
+				let y = c.clone();
+				task::spawn_opts(def, proc() {
+					loop {
+						x.send(p1.recv());
+					}
+				});
+				let mut def = std::task::TaskOpts::new();
+				def.name = Some(std::str::Owned(~"Funnel"));
+				task::spawn_opts(def, proc() {
+					loop {
+						y.send(p2.recv());
+					}
+				});
 			},
-			Leg(l) => {
+			Leg(g) => {
+				println!("leg: {:?}", ps.len());
+				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				let p = ps.shift().unwrap();
-				match spinUp(l, ~[p], ~[], s.clone()) {
+				match spinUp(g, ~[p]) {
 					Some(x) => ps.push(x), // if we get something back, stick it in the back of our endpoint list
 					None => ()
 				}

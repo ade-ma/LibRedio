@@ -18,31 +18,31 @@ pub fn asF32 ( d: ~[complex::Complex32] ) -> ~[f32] { return d.iter().map(|&x| {
 pub fn asF64 ( d: ~[f32] ) -> ~[f64] { return d.iter().map(|&x| x as f64).collect(); }
 
 
-pub fn sum<T: Num+Ord+Primitive>(In: &[T]) -> T {
+pub fn sum<T: Num+Ord+Primitive>(in: &[T]) -> T {
 	let mut out: T = num::zero();
-	if In.len() != 0 {
-		for i in range(0, In.len()) {
-			out = out + In[i];
+	if in.len() != 0 {
+		for i in range(0, in.len()) {
+			out = out + in[i];
 		}
 	}
 	return out
 }
 
 #[inline(always)]
-pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(In: &[T]) -> f32 {
-	let l = In.len() as f32;
-	let s = sum(In).to_f32().unwrap()/l;
+pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(in: &[T]) -> f32 {
+	let l = in.len() as f32;
+	let s = sum(in).to_f32().unwrap()/l;
 	return s/l
 }
 
 #[inline(always)]
-pub fn max<T: Float+Num>(In: &[T]) -> T {
-	In.iter().fold(In[0], |a, &b| a.max(b))
+pub fn max<T: Float+Num>(in: &[T]) -> T {
+	in.iter().fold(in[0], |a, &b| a.max(b))
 }
 
 #[inline(always)]
-pub fn min<T: Float+Num>(In: &[T]) -> T {
-	In.iter().fold(In[0], |a, &b| a.min(b))
+pub fn min<T: Float+Num>(in: &[T]) -> T {
+	in.iter().fold(in[0], |a, &b| a.min(b))
 }
 
 #[inline(always)]
