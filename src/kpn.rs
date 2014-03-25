@@ -9,7 +9,7 @@ use native::task::spawn;
 use std::comm::{Sender, Receiver, Data, Select, Handle};
 
 use std::iter::AdditiveIterator;
-use msgpack::{Array, Unsigned, Double, Value, String};
+use msgpack::{Array, Unsigned, Double, Value, String, Float};
 
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::net::udp::UdpSocket;
@@ -22,9 +22,9 @@ use std::io::{Listener, Acceptor};
 #[deriving(Eq, Clone)]
 pub enum Token {
 	Chip(uint),
-	Dbl(f64),
+	Flt(f32),
 	Break(&'static str),
-	Dur(~Token, f64),
+	Dur(~Token, f32),
 	Run(~Token, uint),
 	Packet(~[Token]),
 }
@@ -45,17 +45,17 @@ pub fn rle(u: Receiver<Token>, v: Sender<Token>) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(u: Receiver<Token>, v: Sender<Token>, sRate: f64) {
+pub fn dle(u: Receiver<Token>, v: Sender<Token>, sRate: f32) {
 	loop {
 		match u.recv() {
-			Run(x, ct) => v.send( Dur ( x, ct as f64 / sRate) ),
+			Run(x, ct) => v.send( Dur ( x, ct as f32 / sRate) ),
 			_ => (),
 		}
 	}
 }
 
 // duration length decoding
-pub fn dld(u: Receiver<Token>, v: Sender<Token>, sRate: f64) {
+pub fn dld(u: Receiver<Token>, v: Sender<Token>, sRate: f32) {
 	loop {
 		match u.recv() {
 			Dur(x, dur) => v.send( Run ( x, (dur * sRate) as uint)),
@@ -76,7 +76,7 @@ pub fn rld(u: Receiver<Token>, v: Sender<Token>) {
 
 
 // manchester 1/2 pulse duration to state matching
-pub fn validTokenManchester(u: Receiver<Token>, v: Sender<Token>, period: f64, epsilon: f64) {
+pub fn validTokenManchester(u: Receiver<Token>, v: Sender<Token>, period: f32, epsilon: f32) {
 	loop {
 		match u.recv() {
 			Dur(~x, dur) => {
@@ -200,11 +200,11 @@ pub fn printSink(u: Receiver<Token>) {
 		match u.recv() {
 			Packet(x) => {
 				if x.len() > 2 {
-					let y: ~[uint] = x.iter().filter_map(|z| match z {
-						&Dbl(y) => Some(y as uint),
-						&Chip(y) => Some(y),
+					let y = x.iter().filter_map(|z| match z {
+						&Flt(y) => Some(y),
+						&Chip(y) => Some(y as f32),
 						y => None
-					}).collect();
+					}).collect::<~[f32]>();
 					println!("{:?}", (y.len(), y));
 				}},
 			x => println!("{:?}", x),
@@ -231,10 +231,10 @@ pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
 pub fn tokenTovalue(u: Token) -> Value {
 	match u {
 		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).collect()),
-		Dbl(x) => Double(x),
+		Flt(x) => Float(x),
 		Chip(x) => Unsigned(x as u64),
 		Break(s) => String(s.into_owned().into_bytes()),
-		Dur(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Dbl(d))]),
+		Dur(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Flt(d))]),
 		Run(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Chip(d))]),
 	}
 }

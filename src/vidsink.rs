@@ -6,7 +6,7 @@ extern crate kpn;
 use native::task::spawn;
 use std::f32;
 use std::comm;
-use kpn::{Token, Packet, Dbl, SourceConf};
+use kpn::{Token, Packet, Flt, SourceConf};
 
 pub fn drawVectorAsBarPlot (screen: &sdl::video::Surface, mut data: ~[f32]){
 	let len: uint = data.len() as uint;
@@ -84,9 +84,8 @@ pub fn vidSink(U: Port<Token>, S: SourceConf) {
 	//let mut y = true;
 	loop {
 		match U.recv() {
-			//Packet(p) => {if y == true {x.pop(); x.unshift(p.move_iter().filter_map(|x| match x { Dbl(x) => Some(x as f32), _ => None }).to_owned_vec()[0])}},
-			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Dbl(x) => Some(x as f32), _ => None }).to_owned_vec()},
-			Dbl(d)  => {x.pop(); x.unshift(d as f32)},
+			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(x), _ => None }).to_owned_vec()},
+			Flt(d)  => {x.pop(); x.unshift(d)},
 			_ => (),
 		}
 		c.send(x.clone());

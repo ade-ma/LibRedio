@@ -16,11 +16,11 @@ fn main() {
 	// flowgraph leg for silver&black temp sensor
 	let t1 = ~[Body(sensors::validTokenA), BodyUint(kpn::packetizer, 36), BodyVecUint(kpn::decoder, ~[14, 2, 12, 8]), Body(sensors::sensorUnpackerA)];
 	// flowgraph leg for white temp sensors
-	let t2 = ~[BodyDoubleDouble(kpn::validTokenManchester, 5e-4, 0.5), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 198), BodyVecUint(kpn::decoder, ~[17, 6, 5, 8, 2, 9, 1, 4, 2, 9, 4]), Fork, Body(sensors::sensorUnpackerB)];
-	let t3 = ~[BodyDoubleDouble(kpn::validTokenManchester, 5.5e-4, 0.4), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 89)];
+	let t2 = ~[BodyFloatFloat(kpn::validTokenManchester, 5e-4, 0.4), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 198), BodyVecUint(kpn::decoder, ~[17, 6, 5, 8, 2, 9, 1, 4, 2, 9, 4]), Fork, Body(sensors::sensorUnpackerB)];
+	let t3 = ~[BodyFloatFloat(kpn::validTokenManchester, 5.5e-4, 0.4), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 89)];
 	// main flowgraph
-	let parsing: ~[Parts] = ~[Body(bitfount::discretize), Body(kpn::rle), BodyDouble(kpn::dle, 0.256e6), Fork, Fork, Leg(t1), Leg(t2), Leg(t3), Funnel, Funnel, Fork, Tail(kpn::printSink), Tail(kpn::udpTokenSink)];
-	let fs: ~[Parts] = ~[HeadDoubleDoubleDouble(bitfount::rtlSource, 434e6, 40.2, 0.256e6), Body(bitfount::trigger), Body(bitfount::filter), Leg(parsing)];
+	let parsing: ~[Parts] = ~[Body(bitfount::discretize), Body(kpn::rle), BodyFloat(kpn::dle, 0.256e6), Fork, Fork, Leg(t1), Leg(t2), Leg(t3), Funnel, Funnel, Fork, Tail(kpn::printSink), Tail(kpn::udpTokenSink)];
+	let fs: ~[Parts] = ~[HeadFloatFloatFloat(bitfount::rtlSource, 434e6, 40.2, 0.256e6), Body(bitfount::trigger), Body(bitfount::filter), Leg(parsing)];
 	// spawn
 	instant::spinUp(fs, ~[]);
 	let (c, p) = channel();

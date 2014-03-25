@@ -1,7 +1,7 @@
 extern crate sndfile;
 extern crate kpn;
 
-use kpn::{Token, Packet, SourceConf, Dbl};
+use kpn::{Token, Packet, SourceConf, Flt};
 use std::num;
 use std::comm::Sender;
 use std::io;
@@ -14,8 +14,8 @@ pub fn wavSource(u: Sender<Token>, s: SourceConf) {
 	assert_eq!(info.channels as u32, 2);
 	let mut x: ~[f64] = ~[0.0,.. 1024];
 	for _ in range(0, (info.frames/2)/1024) {
-		sndf.read_f64(x.as_mut_slice(), 1024);
-		let ds = x.chunks(2).map(|z| Dbl(num::hypot(z[0], z[1]))).to_owned_vec();
+		sndf.read_f32(x.as_mut_slice(), 1024);
+		let ds = x.chunks(2).map(|z| Flt(num::hypot(z[0], z[1]))).to_owned_vec();
 		u.send(Packet(ds));
 		timer.sleep(100);
 	}

@@ -58,7 +58,7 @@ pub fn getDeviceCount() -> u32 {
 pub fn openDevice() -> *c_void {
 	unsafe {
 		let mut i: u32 = 0;
-		let mut devStructPtr: *c_void = ptr::null();
+		let devStructPtr: *c_void = ptr::null();
 		'tryDevices: loop {
 			let success = rtlsdr_open(&devStructPtr, i);
 			if success == 0 {
@@ -145,8 +145,8 @@ pub fn readSync(dev: *c_void, ct: c_uint) -> ~[u8] {
 	}
 }
 
-fn i2f(i: u8) -> f64 {i as f64/127.0 - 1.0}
-pub fn dataToSamples(data: ~[u8]) -> ~[complex::Cmplx<f64>] {
+fn i2f(i: u8) -> f32 {i as f32/127.0 - 1.0}
+pub fn dataToSamples(data: ~[u8]) -> ~[complex::Cmplx<f32>] {
 	let samples = data.chunks(2).map(|i| complex::Cmplx{re:i2f(i[0]), im:i2f(i[1])}).collect();
 	return samples;
 }

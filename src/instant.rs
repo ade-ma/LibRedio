@@ -12,16 +12,16 @@ use native::task;
 #[deriving(Clone)]
 pub enum Parts{
 	Head (fn (Sender<Token>) -> () ),
-	HeadDouble (fn (Sender<Token>, f64) -> (), f64 ),
-	HeadDoubleDouble (fn (Sender<Token>, f64, f64) -> (), f64, f64 ),
-	HeadDoubleDoubleDouble (fn (Sender<Token>, f64, f64, f64) -> (), f64, f64, f64 ),
+	HeadFloat (fn (Sender<Token>, f32) -> (), f32 ),
+	HeadFloatFloat (fn (Sender<Token>, f32, f32) -> (), f32, f32 ),
+	HeadFloatFloatFloat (fn (Sender<Token>, f32, f32, f32) -> (), f32, f32, f32 ),
 	Body (fn (Receiver<Token>, Sender<Token>) -> () ),
 	BodyUint (fn (Receiver<Token>, Sender<Token>, uint) -> (), uint ),
 	BodyVecUint (fn (Receiver<Token>, Sender<Token>, ~[uint]) -> (), ~[uint]),
-	BodyDouble (fn (Receiver<Token>, Sender<Token>, f64) -> (), f64),
-	BodyVecDouble (fn (Receiver<Token>, Sender<Token>, ~[f64]) -> (), ~[f64]),
-	BodyDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64) -> (), f64, f64),
-	BodyDoubleDoubleDouble (fn (Receiver<Token>, Sender<Token>, f64, f64, f64) -> (), f64, f64, f64),
+	BodyFloat (fn (Receiver<Token>, Sender<Token>, f32) -> (), f32),
+	BodyVecFloat (fn (Receiver<Token>, Sender<Token>, ~[f32]) -> (), ~[f32]),
+	BodyFloatFloat (fn (Receiver<Token>, Sender<Token>, f32, f32) -> (), f32, f32),
+	BodyFloatFloatFloat (fn (Receiver<Token>, Sender<Token>, f32, f32, f32) -> (), f32, f32, f32),
 	Tail (fn (Receiver<Token>) -> () ), // stream g
 	Fork,
 	Funnel,
@@ -34,10 +34,10 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 		&Body(_) => true,
 		&BodyUint(_, _) => true,
 		&BodyVecUint(_, _) => true,
-		&BodyDouble(_, _) => true,
-		&BodyVecDouble(_, _) => true,
-		&BodyDoubleDouble(_, _, _) => true,
-		&BodyDoubleDoubleDouble(_, _, _, _) => true,
+		&BodyFloat(_, _) => true,
+		&BodyVecFloat(_, _) => true,
+		&BodyFloatFloat(_, _, _) => true,
+		&BodyFloatFloatFloat(_, _, _, _) => true,
 		_ => false,
 	};
 	// iterate over functions
@@ -50,19 +50,19 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(c) });
 			},
-			HeadDouble(g, v) => {
+			HeadFloat(g, v) => {
 				let (c, p) = channel();
 				ps.push(p);
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(c, v) });
 			}
-			HeadDoubleDouble(g, v1, v2) => {
+			HeadFloatFloat(g, v1, v2) => {
 				let (c, p) = channel();
 				ps.unshift(p);
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(c, v1, v2) });
 			}
-			HeadDoubleDoubleDouble(g, v1, v2, v3) => {
+			HeadFloatFloatFloat(g, v1, v2, v3) => {
 				println!("head: {:?}", ps.len());
 				let (c, p) = channel();
 				ps.unshift(p);
@@ -93,7 +93,7 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(p, c, v) });
 			}
-			BodyDouble(g, v) => {
+			BodyFloat(g, v) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
@@ -101,7 +101,7 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(p, c, v) });
 			}
-			BodyVecDouble(g, v) => {
+			BodyVecFloat(g, v) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
@@ -109,7 +109,7 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(p, c, v) });
 			}
-			BodyDoubleDouble(g, v1, v2) => {
+			BodyFloatFloat(g, v1, v2) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
@@ -117,7 +117,7 @@ pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Toke
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				task::spawn_opts(def, proc() { g(p, c, v1, v2) });
 			}
-			BodyDoubleDoubleDouble(g, v1, v2, v3) => {
+			BodyFloatFloatFloat(g, v1, v2, v3) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();

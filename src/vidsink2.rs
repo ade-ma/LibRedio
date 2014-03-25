@@ -3,7 +3,7 @@ extern crate dsputils;
 extern crate native;
 extern crate kpn;
 
-use kpn::{Token, SourceConf, Packet, Dbl};
+use kpn::{Token, SourceConf, Packet, Flt};
 use std::comm;
 use native::task::spawn;
 
@@ -15,7 +15,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	let decimateFactor = (px as f32 - (0.5f32*(data.len() as f32/px as f32)) ) / data.len() as f32;
 	data = data.iter().enumerate().filter_map(|(x, &y)|
 		if ((x as f32*decimateFactor) - (x as f32*decimateFactor).floor()) < decimateFactor { Some(y) } else { None }
-	 ).to_owned_vec();
+	 ).collect();
 	// black screen background
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 0, 0));
 	renderer.clear();
@@ -40,7 +40,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 			yf as i32,
 			width as i32,
 			hf as i32)
-	}).to_owned_vec();
+	}).collect();
 	renderer.fill_rects(rs.slice_from(0));
 }
 
@@ -82,8 +82,8 @@ pub fn vidSink(u: Receiver<Token>, s: SourceConf) {
 	let mut x: ~[f32] = ~[0.0f32, ..900];
 	loop {
 		match u.recv() {
-			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Dbl(x) => Some(x as f32), _ => None }).to_owned_vec()},
-			Dbl(d)  => {x.pop(); x.unshift(d as f32)},
+			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(x), _ => None }).collect()},
+			Flt(d)  => {x.pop(); x.unshift(d)},
 			_ => (),
 		}
 		c.send(x.clone());
