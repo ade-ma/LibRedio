@@ -8,36 +8,20 @@ extern crate bitfount;
 use kpn::Token;
 use native::task;
 
-// parts of a directed acyclical flowgraph
-pub enum Parts<T, U>{
-	Head (fn (Sender<Token>) -> () ),
-	HeadFloat (fn (Sender<Token>, T) -> (), T),
-	HeadFloatFloat (fn (Sender<Token>, T, T) -> (), T, T),
-	HeadFloatFloatFloat (fn (Sender<Token>, T, T, T) -> (), T, T, T),
-	Body (fn (Receiver<Token>, Sender<Token>) -> () ),
-	BodyUint (fn (Receiver<Token>, Sender<Token>, U) -> (), U),
-	BodyVecUint (fn (Receiver<Token>, Sender<Token>, ~[U]) -> (), ~[U]),
-	BodyFloat (fn (Receiver<Token>, Sender<Token>, T) -> (), T),
-	BodyVecFloat (fn (Receiver<Token>, Sender<Token>, ~[T]) -> (), ~[T]),
-	BodyFloatFloat (fn (Receiver<Token>, Sender<Token>, T, T) -> (), T, T),
-	BodyFloatFloatFloat (fn (Receiver<Token>, Sender<Token>, T, T, T) -> (), T, T, T),
-	Tail (fn (Receiver<Token>) -> () ), // stream g
+pub enum Parts<T>{
+	Head (proc (Sender<T>)),
+	Head (proc (Sender<kpn::Token>)),
+	Body (proc (Receiver<T>, Sender<T>)),
+	Tail (proc (Receiver<T>)),
+	Leg (~[Parts<T>]),
 	Fork,
 	Funnel,
-	Leg (~[Parts<T, U>] ),
 }
 
-
-pub fn spinUp<T: Send, U: Send>(fss: ~[Parts<T, U>], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Token>>{
+pub fn spinUp<T: Send+Clone>(fss: ~[Parts<T>], mut ps: ~[Receiver<T>]) -> Option<Receiver<T>>{
 	// spawn ports and channels
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
-		&BodyUint(_, _) => true,
-		&BodyVecUint(_, _) => true,
-		&BodyFloat(_, _) => true,
-		&BodyVecFloat(_, _) => true,
-		&BodyFloatFloat(_, _, _) => true,
-		&BodyFloatFloatFloat(_, _, _, _) => true,
 		_ => false,
 	};
 	// iterate over functions
@@ -48,88 +32,21 @@ pub fn spinUp<T: Send, U: Send>(fss: ~[Parts<T, U>], mut ps: ~[Receiver<Token>])
 				let (c, p) = channel();
 				ps.push(p);
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(c) });
+				task::spawn_opts(def, proc(){g(c)});
 			},
-			HeadFloat(g, v) => {
-				let (c, p) = channel();
-				ps.push(p);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(c, v) });
-			}
-			HeadFloatFloat(g, v1, v2) => {
-				let (c, p) = channel();
-				ps.unshift(p);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(c, v1, v2) });
-			}
-			HeadFloatFloatFloat(g, v1, v2, v3) => {
-				println!("head: {:?}", ps.len());
-				let (c, p) = channel();
-				ps.unshift(p);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(c, v1, v2, v3) });
-			}
 			Body(g) => {
 				println!("body: {:?}", ps.len());
 				let (c, pn) = channel();
 				let p = ps.shift().unwrap();
 				ps.unshift(pn);
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c) });
-			}
-			BodyUint(g, v) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v) });
-			}
-			BodyVecUint(g, v) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v) });
-			}
-			BodyFloat(g, v) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v) });
-			}
-			BodyVecFloat(g, v) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v) });
-			}
-			BodyFloatFloat(g, v1, v2) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v1, v2) });
-			}
-			BodyFloatFloatFloat(g, v1, v2, v3) => {
-				println!("body: {:?}", ps.len());
-				let (c, pn) = channel();
-				let p = ps.shift().unwrap();
-				ps.unshift(pn);
-				def.name = Some(std::str::Owned(format!("{:?}", g)));
-				task::spawn_opts(def, proc() { g(p, c, v1, v2, v3) });
+				task::spawn_opts(def, proc(){g(p, c)});
 			}
 			Tail(g) => {
 				println!("tail: {:?}", ps.len());
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				let p = ps.pop().unwrap();
-				task::spawn_opts(def, proc() { g(p) });
+				task::spawn_opts(def, proc(){g(p)});
 			}
 			Fork => {
 				println!("fork: {:?}", ps.len());
