@@ -19,8 +19,8 @@ fn main() {
 	let t2 = ~[BodyFloatFloat(kpn::validTokenManchester, 5e-4, 0.4), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 198), BodyVecUint(kpn::decoder, ~[17, 6, 5, 8, 2, 9, 1, 4, 2, 9, 4]), Body(sensors::sensorUnpackerB)];
 	let t3 = ~[BodyFloatFloat(kpn::validTokenManchester, 5.5e-4, 0.4), Body(kpn::manchesterd), BodyUint(kpn::packetizer, 89)];
 	// main flowgraph
-	let parsing: ~[Parts] = ~[Body(bitfount::discretize), Body(kpn::rle), BodyFloat(kpn::dle, 0.256e6), Fork, Fork, Leg(t1), Leg(t2), Leg(t3), Funnel, Funnel, Fork, Tail(kpn::printSink), Tail(kpn::udpTokenSink)];
-	let fs: ~[Parts] = ~[HeadFloatFloatFloat(bitfount::rtlSource, 434e6, 40.2, 0.256e6), Body(bitfount::trigger), Body(bitfount::filter), Leg(parsing)];
+	let parsing = ~[Body(bitfount::discretize), Body(kpn::rle), BodyFloat(kpn::dle, 0.256e6), Fork, Fork, Leg(t1), Leg(t2), Leg(t3), Funnel, Funnel, Fork, Tail(kpn::printSink), Tail(kpn::udpTokenSink)];
+	let fs = ~[HeadFloatFloatFloat(bitfount::rtlSource, 434e6, 40.2, 0.256e6), Body(bitfount::trigger), Body(bitfount::filter), Leg(parsing)];
 	// spawn
 	instant::spinUp(fs, ~[]);
 	let (c, p) = channel();

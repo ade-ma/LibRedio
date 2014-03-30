@@ -9,26 +9,26 @@ use kpn::Token;
 use native::task;
 
 // parts of a directed acyclical flowgraph
-#[deriving(Clone)]
-pub enum Parts{
+pub enum Parts<T, U>{
 	Head (fn (Sender<Token>) -> () ),
-	HeadFloat (fn (Sender<Token>, f32) -> (), f32 ),
-	HeadFloatFloat (fn (Sender<Token>, f32, f32) -> (), f32, f32 ),
-	HeadFloatFloatFloat (fn (Sender<Token>, f32, f32, f32) -> (), f32, f32, f32 ),
+	HeadFloat (fn (Sender<Token>, T) -> (), T),
+	HeadFloatFloat (fn (Sender<Token>, T, T) -> (), T, T),
+	HeadFloatFloatFloat (fn (Sender<Token>, T, T, T) -> (), T, T, T),
 	Body (fn (Receiver<Token>, Sender<Token>) -> () ),
-	BodyUint (fn (Receiver<Token>, Sender<Token>, uint) -> (), uint ),
-	BodyVecUint (fn (Receiver<Token>, Sender<Token>, ~[uint]) -> (), ~[uint]),
-	BodyFloat (fn (Receiver<Token>, Sender<Token>, f32) -> (), f32),
-	BodyVecFloat (fn (Receiver<Token>, Sender<Token>, ~[f32]) -> (), ~[f32]),
-	BodyFloatFloat (fn (Receiver<Token>, Sender<Token>, f32, f32) -> (), f32, f32),
-	BodyFloatFloatFloat (fn (Receiver<Token>, Sender<Token>, f32, f32, f32) -> (), f32, f32, f32),
+	BodyUint (fn (Receiver<Token>, Sender<Token>, U) -> (), U),
+	BodyVecUint (fn (Receiver<Token>, Sender<Token>, ~[U]) -> (), ~[U]),
+	BodyFloat (fn (Receiver<Token>, Sender<Token>, T) -> (), T),
+	BodyVecFloat (fn (Receiver<Token>, Sender<Token>, ~[T]) -> (), ~[T]),
+	BodyFloatFloat (fn (Receiver<Token>, Sender<Token>, T, T) -> (), T, T),
+	BodyFloatFloatFloat (fn (Receiver<Token>, Sender<Token>, T, T, T) -> (), T, T, T),
 	Tail (fn (Receiver<Token>) -> () ), // stream g
 	Fork,
 	Funnel,
-	Leg (~[Parts] ),
+	Leg (~[Parts<T, U>] ),
 }
 
-pub fn spinUp(fss: ~[Parts], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Token>>{
+
+pub fn spinUp<T: Send, U: Send>(fss: ~[Parts<T, U>], mut ps: ~[Receiver<Token>]) -> Option<Receiver<Token>>{
 	// spawn ports and channels
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
