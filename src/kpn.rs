@@ -233,7 +233,7 @@ pub fn tokenTovalue(u: Token) -> Value {
 		Packet(p) => Array(p.move_iter().map(|x| tokenTovalue(x)).collect()),
 		Flt(x) => Float(x),
 		Chip(x) => Unsigned(x as u64),
-		Break(s) => String(s.into_owned().into_bytes()),
+		Break(s) => String(s.into_owned()),
 		Dur(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Flt(d))]),
 		Run(~t,d) => Array(~[tokenTovalue(t), tokenTovalue(Chip(d))]),
 	}

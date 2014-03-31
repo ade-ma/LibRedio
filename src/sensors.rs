@@ -44,10 +44,10 @@ pub fn sensorUnpackerA(u: Receiver<Token>, v: Sender<Token>) {
 					}
 					2 => {
 						v.send(Packet(~[Packet(p.clone()),
-							Chip(0), Chip(l[1]+l[2]), Flt((l[3]*16+l[4]) as f32 / 10f32),
+							Chip(0), Chip(l[1]), Flt((l[2]*256+l[3]*16+l[4]) as f32 / 10f32),
 							Flt(t)]));
 						v.send(Packet(~[Packet(p.clone()),
-							Chip(1), Chip(l[1]+l[2]), Flt((l[5]*16+l[6]) as f32 / 1.5f32 - 6f32),
+							Chip(1), Chip(l[1]), Flt((l[5]*16+l[6]) as f32 / 1.5f32 - 6f32),
 							Flt(t)]));
 					}
 					_ => println!("{:?}", &l)

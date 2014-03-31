@@ -10,7 +10,6 @@ use native::task;
 
 pub enum Parts<T>{
 	Head (proc (Sender<T>)),
-	Head (proc (Sender<kpn::Token>)),
 	Body (proc (Receiver<T>, Sender<T>)),
 	Tail (proc (Receiver<T>)),
 	Leg (~[Parts<T>]),
