@@ -8,10 +8,11 @@ extern crate bitfount;
 use kpn::Token;
 use native::task;
 
+#[deriving()]
 pub enum Parts<T>{
-	Head (proc (Sender<T>)),
-	Body (proc (Receiver<T>, Sender<T>)),
-	Tail (proc (Receiver<T>)),
+	Head (proc (Sender<T>):Send),
+	Body (proc (Receiver<T>, Sender<T>):Send),
+	Tail (proc (Receiver<T>):Send),
 	Leg (~[Parts<T>]),
 	Fork,
 	Funnel,
