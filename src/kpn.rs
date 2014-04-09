@@ -1,7 +1,7 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
 
-extern crate msgpack;
+//extern crate msgpack;
 extern crate native;
 extern crate dsputils;
 
@@ -9,7 +9,7 @@ use native::task::spawn;
 use std::comm::{Sender, Receiver, Data, Select, Handle};
 
 use std::iter::AdditiveIterator;
-use msgpack::{Array, Unsigned, Double, Value, String, Float};
+//use msgpack::{Array, Unsigned, Double, Value, String, Float};
 
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::net::udp::UdpSocket;
@@ -226,7 +226,7 @@ pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
 	return out
 }
 
-
+/*
 // recursive encoding of a Token to a msgpack value
 pub fn tokenTovalue(u: Token) -> Value {
 	match u {
@@ -257,4 +257,4 @@ pub fn unixTokenSink(u: Receiver<Token>) {
 			c.clone().write(msgpack::to_msgpack(&v));
 		}
 	});
-}
+}*/
