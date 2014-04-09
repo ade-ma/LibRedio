@@ -7,7 +7,6 @@ use num::complex;
 
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
-
 use std::num;
 use std::iter::AdditiveIterator;
 use std::num::Zero;
@@ -66,7 +65,7 @@ pub fn window(m: uint) -> ~[f32] {
 	// let a: ~[f32] = ~[0.54, 0.46, 0.0, 0.0];
 	let results: ~[f32] = range(0, m + 1).map(|x| {
 		let n = x as f32;
-		a[0] - a[1]*num::cos(2f32*pi*n/(N-1f32))+a[2]*num::cos(4f32*pi*n/(N-1f32))-a[3]*num::cos(6f32*pi*n/(N-1f32))
+		a[0] - a[1]*(2f32*pi*n/(N-1f32)).cos()+a[2]*(4f32*pi*n/(N-1f32)).cos()-a[3]*(6f32*pi*n/(N-1f32).cos())
 	}).collect();
 	return results;
 }
@@ -78,7 +77,7 @@ pub fn sinc(m: uint, fc: f32) -> ~[f32] {
 	let results: ~[f32] = range(0, m).map(|x| -> f32 {
 		let n = x as f32 - m as f32/2f32;
 		let mut r = 2f32*fc;
-		if n != 0.0 { r = num::sin(2f32*pi*fc*n)/(pi*n); }
+		if n != 0.0 { r = (2f32*pi*fc*n).sin()/(pi*n); }
 		r
 	}).collect::<~[f32]>();
 	return results;

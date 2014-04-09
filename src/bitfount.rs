@@ -45,7 +45,7 @@ pub fn rtlSourceSync(v: Sender<Token>, cFreq: f32, gain: f32, sRate: f32) {
 	'main : loop {
 		let x = rtlsdr::readSync(devHandle, bSize as u32);
 		let samples = rtlsdr::dataToSamples(x);
-		let normalized: ~[f32] = samples.iter().map(|x| std::num::sqrt(x.re*x.re+x.im*x.im)).collect();
+		let normalized: ~[f32] = samples.iter().map(|x| (x.re*x.re+x.im*x.im).sqrt()).collect();
 		v.send(Packet(normalized.move_iter().map(|x| Flt(x)).collect()))
 	}
 	rtlsdr::close(devHandle);

@@ -3,12 +3,12 @@
 
 extern crate num;
 extern crate native;
-
+extern crate libc;
 use num::complex;
 
 use native::task::spawn;
 use std::str;
-use std::libc::{c_int, c_uint, c_void};
+use libc::{c_int, c_uint, c_void};
 use std::slice;
 use std::comm::{Sender, Receiver, channel};
 use std::ptr;
