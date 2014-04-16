@@ -6,7 +6,7 @@ extern crate native;
 extern crate dsputils;
 
 use native::task::spawn;
-use std::comm::{Sender, Receiver, Data, Select, Handle};
+use std::comm::{Sender, Receiver, Select, Handle};
 
 use std::iter::AdditiveIterator;
 //use msgpack::{Array, Unsigned, Double, Value, String, Float};
@@ -45,10 +45,10 @@ pub fn rle(u: Receiver<Token>, v: Sender<Token>) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(u: Receiver<Token>, v: Sender<Token>, sRate: f32) {
+pub fn dle(u: Receiver<Token>, v: Sender<Token>, sRate: uint) {
 	loop {
 		match u.recv() {
-			Run(x, ct) => v.send( Dur ( x, ct as f32 / sRate) ),
+			Run(x, ct) => v.send( Dur ( x, ct as f32 / sRate as f32) ),
 			_ => (),
 		}
 	}

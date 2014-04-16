@@ -12,19 +12,19 @@ use num::complex;
 use std::comm::Sender;
 use kpn::{Token, Chip, Flt, Packet};
 
-pub fn rtlSource(v: Sender<Token>, cFreq: f32, gain: f32, sRate: f32) {
+pub fn rtlSource(v: Sender<Token>, cFreq: u32, gain: u32, sRate: u32) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
-	rtlsdr::setSampleRate(devHandle, sRate as u32);
+	rtlsdr::setSampleRate(devHandle, sRate);
 	rtlsdr::clearBuffer(devHandle);
-	rtlsdr::setGain(devHandle, (gain * 10.0) as u32);
-	rtlsdr::setFrequency(devHandle, cFreq as u32);
+	rtlsdr::setGain(devHandle, gain);
+	rtlsdr::setFrequency(devHandle, cFreq);
 
-	let pdata = rtlsdr::readAsync(devHandle, bSize as u32);
+	let pdata = rtlsdr::readAsync(devHandle, bSize);
 	'main : loop {
 		let samples = match pdata.recv_opt() {
-			Some(x) => rtlsdr::dataToSamples(x),
-			None => break 'main,
+			Ok(x) => rtlsdr::dataToSamples(x),
+			Err(_) => break 'main,
 		};
 
 		let normalized: ~[f32] = samples.iter().map(|x| x.norm()).collect();

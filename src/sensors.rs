@@ -1,4 +1,4 @@
-#[feature(globs)];
+#![feature(globs)]
 extern crate kpn;
 extern crate time;
 
@@ -7,21 +7,14 @@ use std::comm::{Receiver, Sender};
 
 // temperature sensor pulse duration modulated binary protocol symbol matcher
 pub fn validTokenA(u: Receiver<Token>, v: Sender<Token>) {
+	let mut x: Token = Chip(0);
 	loop {
-		match u.recv() {
-			Dur(~va, dura) => {
-				if (va == Chip(1)) && (4e-4 < dura) && (dura < 6e-4) {
-					match u.recv() {
-						Dur(_, durb) => {
-							if (1.7e-3 < durb) && (durb < 2.2e-3) {v.send(Chip(0))}
-							else if (3.6e-3 < durb) && (durb < 4.2e-3) {v.send(Chip(1))}
-							else if durb > 8.7e-3 {v.send(Break("silence"))}
-						},
-						_ => ()
-					}
-				}
-			}
-			_=> ()
+		match (x.clone(), u.recv()) {
+			(Dur(~Chip(1), 1e-6..6e-4), Dur(~Chip(0), 1.7e-3..2.6e-3)) => {v.send(Chip(0))}
+			(Dur(~Chip(1), 1e-6..6e-4), Dur(~Chip(0), 3.6e-3..4.6e-3)) => {v.send(Chip(1))}
+			(_, Dur(~Chip(0), 8.7e-3..1e1)) => {v.send(Break("silence"))}
+			(Dur(~Chip(0), 8.7e-3..1e1), _) => {v.send(Break("silence"))}
+			(a, b) => {println!("{:?}", (&a,&b)); x = b.clone();}
 		}
 	}
 }
@@ -57,6 +50,8 @@ pub fn sensorUnpackerA(u: Receiver<Token>, v: Sender<Token>) {
 		}
 	}
 }
+
+
 
 pub fn sensorUnpackerB(u: Receiver<Token>, v: Sender<Token>) {
 	loop {
