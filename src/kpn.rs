@@ -26,7 +26,7 @@ pub enum Token {
 	Break(&'static str),
 	Dur(~Token, f32),
 	Run(~Token, uint),
-	Packet(~[Token]),
+	Packet(Vec<Token>),
 }
 
 // run length encoding
@@ -124,9 +124,9 @@ enum state {
 }
 
 // basic convolutional detector, accepts an infinite sequence, passes all symbols after a match until a 1,0 symbol
-pub fn detector(u: Receiver<Token>, v: Sender<Token>, w: ~[uint]) {
+pub fn detector(u: Receiver<Token>, v: Sender<Token>, w: Vec<uint>) {
 	// surprisingly useless unless implemented in hardware
-	let mut m: ~[uint] = range(0,w.len()).map(|_| 0).collect();
+	let mut m: Vec<uint> = range(0,w.len()).map(|_| 0).collect();
 	let mut state = matching;
 	loop {
 		match u.recv() {
@@ -146,7 +146,7 @@ pub fn detector(u: Receiver<Token>, v: Sender<Token>, w: ~[uint]) {
 
 pub fn packetizer(u: Receiver<Token>, v: Sender<Token>, t: uint) {
 	loop {
-		let mut m: ~[Token] = ~[];
+		let mut m: Vec<Token> = vec!();
 		'acc : loop {
 			match u.recv() {
 				Break(_) => {break 'acc}
@@ -216,9 +216,9 @@ pub fn b2d(xs: &[uint]) -> uint {
 	return range(0, xs.len()).map(|i| (1<<(xs.len()-i-1))*xs[i]).sum();
 }
 
-pub fn eat(x: &[uint], is: ~[uint]) -> ~[uint] {
+pub fn eat(x: &[uint], is: ~[uint]) -> Vec<uint> {
 	let mut i = 0;
-	let mut out: ~[uint] = ~[];
+	let mut out: Vec<uint> = vec!();
 	for &index in is.iter() {
 		out.push(b2d(x.slice(i, i+index)));
 		i = i + index;

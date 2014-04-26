@@ -8,17 +8,16 @@ extern crate bitfount;
 use kpn::Token;
 use native::task;
 
-#[deriving()]
 pub enum Parts<T>{
 	Head (proc (Sender<T>):Send),
 	Body (proc (Receiver<T>, Sender<T>):Send),
 	Tail (proc (Receiver<T>):Send),
-	Leg (~[Parts<T>]),
+	Leg (Vec<Parts<T>>),
 	Fork,
 	Funnel,
 }
 
-pub fn spinUp<T: Send+Clone>(fss: ~[Parts<T>], mut ps: ~[Receiver<T>]) -> Option<Receiver<T>>{
+pub fn spinUp<T: Send+Clone>(fss: Vec<Parts<T>>, mut ps: Vec<Receiver<T>>) -> Option<Receiver<T>>{
 	// spawn ports and channels
 	let ret = match fss.iter().last().unwrap() {
 		&Body(_) => true,
@@ -90,7 +89,7 @@ pub fn spinUp<T: Send+Clone>(fss: ~[Parts<T>], mut ps: ~[Receiver<T>]) -> Option
 				println!("leg: {:?}", ps.len());
 				def.name = Some(std::str::Owned(format!("{:?}", g)));
 				let p = ps.shift().unwrap();
-				match spinUp(g, ~[p]) {
+				match spinUp(g, vec!(p)) {
 					Some(x) => ps.push(x), // if we get something back, stick it in the back of our endpoint list
 					None => ()
 				}

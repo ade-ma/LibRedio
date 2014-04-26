@@ -28,20 +28,20 @@ pub fn sensorUnpackerA(u: Receiver<Token>, v: Sender<Token>) {
 				let l: ~[uint] = p.clone().move_iter().filter_map(|x| match x { Chip(c) => Some(c), _ => None }).collect();
 				match l[0] {
 					1 => {
-						v.send(Packet(~[Packet(p.clone()),
+						v.send(Packet(vec!(Packet(p.clone()),
 							Chip(0), Chip(l[1]+l[2]), Flt((l[4]*16+l[5]) as f32 / 10f32),
-							Flt(t)]));
-						v.send(Packet(~[Packet(p.clone()),
+							Flt(t))));
+						v.send(Packet(vec!(Packet(p.clone()),
 							Chip(1), Chip(l[1]+l[2]), Flt((l[6]*16+l[7]) as f32),
-							Flt(t)]));
+							Flt(t))));
 					}
 					2 => {
-						v.send(Packet(~[Packet(p.clone()),
+						v.send(Packet(vec!(Packet(p.clone()),
 							Chip(0), Chip(l[1]), Flt((l[2]*256+l[3]*16+l[4]) as f32 / 10f32),
-							Flt(t)]));
-						v.send(Packet(~[Packet(p.clone()),
+							Flt(t))));
+						v.send(Packet(vec!(Packet(p.clone()),
 							Chip(1), Chip(l[1]), Flt((l[5]*16+l[6]) as f32 / 1.5f32 - 6f32),
-							Flt(t)]));
+							Flt(t))));
 					}
 					_ => println!("{:?}", &l)
 			};
@@ -63,7 +63,7 @@ pub fn sensorUnpackerB(u: Receiver<Token>, v: Sender<Token>) {
 				let mut x = l[5] as f32;
 				if l[4] == 1 { x = 16.6 - 0.057*(512.0-x);} // magic hardware specific numbers
 				else { x = x * 0.057 + 16.6 };
-				v.send(Packet(~[Packet(p.clone()), Chip(0), Chip(l[2]), Flt(x), Flt(t)]));
+				v.send(Packet(vec!(Packet(p.clone()), Chip(0), Chip(l[2]), Flt(x), Flt(t))));
 			},
 			y => println!("{:?}", y),
 		}

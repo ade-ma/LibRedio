@@ -14,6 +14,9 @@ all: $(OBJ)
 	$(CC) $(CFLAGS) ./src/temps.rs
 	mv temps bin
 
+test:
+	$(CC) $(CFLAGS) ./src/test.rs
+
 ./lib/libsndfile*.rlib:
 	mkdir -p lib
 	$(CC) $(CFLAGS) --crate-type=lib ./src/sndfile.rs

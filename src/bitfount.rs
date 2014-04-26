@@ -57,7 +57,7 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 	// rtlsdr config
 	let triggerDuration: int = 50;
 	let mut trigger: int = 0;
-	let mut sampleBuffer: ~[f32] = ~[0.0];
+	let mut sampleBuffer: Vec<f32> = vec!(0.0);
 	let mut threshold: f32 = 0.0;
 
 	'main: loop {
@@ -71,7 +71,7 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 		// wait for data or exit if data pipe is closed
 		// if the buffer's too big, throw it away to prevent OOM
 		if sampleBuffer.len() > 1000*triggerDuration as uint*bSize {
-			sampleBuffer = ~[0.0];
+			sampleBuffer = vec!(0.0);
 			println!("{:?}", threshold);
 		}
 
@@ -93,14 +93,14 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 
 		// if we're triggering, collect samples
 		if trigger > 1 {
-			sampleBuffer.push_all_move(samples);
+			sampleBuffer.push_all(samples.slice_from(0));
 		}
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
 			v.send(Packet(sampleBuffer.move_iter().map(|x| Flt(x)).collect()));
 			println!("{:?}", (trigger, s, threshold));
-			sampleBuffer = ~[];
+			sampleBuffer = vec!();
 		}
 	}
 
