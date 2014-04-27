@@ -19,10 +19,12 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#[allow(dead_code, non_camel_case_types)];
+#![allow(dead_code, non_camel_case_types)]
 
+extern crate libc;
+
+use libc::{c_char, c_void};
 use super::{SndInfo, Error};
-use std::libc::{c_char, c_void};
 
 pub type SF_MODE = i32;
 pub static SFM_READ : SF_MODE   = 0x10;
@@ -122,9 +124,9 @@ pub static SF_FORMAT_ENDMASK : FORMAT_TYPE      = 0x30000000;
 pub type SNDFILE = c_void;
 
 pub struct FormatInfo {
-    format : i32,
-    name : *c_char,
-    extension : *c_char
+    pub format : i32,
+    pub name : *c_char,
+    pub extension : *c_char
 }
 
 extern "C" {

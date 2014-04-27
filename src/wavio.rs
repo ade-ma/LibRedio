@@ -1,21 +1,21 @@
 extern crate sndfile;
 extern crate kpn;
 
-use kpn::{Token, Packet, SourceConf, Flt};
+use kpn::{Token, Packet, Flt};
 use std::num;
 use std::comm::Sender;
 use std::io;
 
-pub fn wavSource(u: Sender<Token>, s: SourceConf) {
+pub fn wavSource(u: Sender<Token>, sRate: u32) {
 	let mut timer = io::Timer::new().unwrap();
 	let mut sndf = sndfile::SndFile::new("./in.wav", sndfile::Read).unwrap();
 	let info = sndf.get_sndinfo();
-	assert_eq!(info.samplerate as u32, s.Rate as u32);
+	assert_eq!(info.samplerate as u32, sRate);
 	assert_eq!(info.channels as u32, 2);
-	let mut x: ~[f64] = ~[0.0,.. 1024];
+	let mut x: ~[f32] = ~[0.0,.. 1024];
 	for _ in range(0, (info.frames/2)/1024) {
 		sndf.read_f32(x.as_mut_slice(), 1024);
-		let ds = x.chunks(2).map(|z| Flt(num::hypot(z[0], z[1]))).to_owned_vec();
+		let ds = x.chunks(2).map(|z| Flt(z[0].hypot(z[1]))).collect();
 		u.send(Packet(ds));
 		timer.sleep(100);
 	}

@@ -5,8 +5,8 @@ OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/lib
 
 ifeq ($(ARCH),arm)
 CFLAGS+= --target arm-unknown-linux-gnueabihf -C linker=arm-linux-gnueabihf-gcc -C link-args=-Wl,-rpath-link,$(PWD)/lib/ -C target-feature=+vfp3,+v7,+neon,+vfp4
-#else
-#OBJ += ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib ./lib/libsndfile*.rlib ./lib/libwavio*.rlib
+else
+OBJ += ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib ./lib/libsndfile*.rlib ./lib/libwavio*.rlib
 endif
 
 all: $(OBJ)

@@ -3,11 +3,12 @@ extern crate dsputils;
 extern crate native;
 extern crate kpn;
 
-use kpn::{Token, SourceConf, Packet, Flt};
+
+use kpn::{Token, Packet, Flt};
 use std::comm;
 use native::task::spawn;
 
-pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32]) {
+pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len: uint = data.len() as uint;
@@ -29,28 +30,28 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: ~[f32])
 	let scale: f32 = height / (2f32*(dmax-dmin));
 	let width = if width > 1.0 { width } else { 1.0 };
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 7));
-	let rs = range(0, data.len()).map(|i| {
-		let x = data[i];
+	let rs: ~[sdl2::rect::Rect] = range(0, data.len()).map(|i| {
+		let &x = data.get(i);
 		let mut yf = height*0.5f32;
 		let mut hf = scale*x;
 		if x > 0f32 {yf -= x*scale;}
 		if x < 0f32 {hf = -1f32*hf;}
-		sdl2::rect::Rect (
-			((sw as f32) - width*(i as f32 + 1.0)) as i32,
-			yf as i32,
-			width as i32,
-			hf as i32)
+		sdl2::rect::Rect {
+			x: ((sw as f32) - width*(i as f32 + 1.0)) as i32,
+			y: yf as i32,
+			w: width as i32,
+			h: hf as i32}
 	}).collect();
 	renderer.fill_rects(rs.slice_from(0));
 }
 
-pub fn doWorkWithPEs (pDataC: comm::Receiver<~[f32]>) {
+pub fn doWorkWithPEs (pDataC: comm::Receiver<Vec<f32>>) {
 	//sdl2::init([sdl2::InitVideo]);
-	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, []) {
+	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
 		Ok(window) => window,
 		Err(err) => fail!("")
 	};
-	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Software]){
+	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
 		Ok(renderer) => renderer,
 		Err(err) => fail!("")
 	};
@@ -61,7 +62,7 @@ pub fn doWorkWithPEs (pDataC: comm::Receiver<~[f32]>) {
 			_ => {}
 		}
 		match pDataC.try_recv() {
-			comm::Data(d) => {
+			Ok(d) => {
 				drawVectorAsBarPlot(renderer, d);
 			}
 			_ => ()
@@ -71,15 +72,15 @@ pub fn doWorkWithPEs (pDataC: comm::Receiver<~[f32]>) {
 	sdl2::quit();
 }
 
-pub fn spawnVectorVisualSink() -> (comm::Sender<~[f32]>) {
+pub fn spawnVectorVisualSink() -> (comm::Sender<Vec<f32>>) {
 	let (cData, pData) = comm::channel();
 	spawn(proc(){ doWorkWithPEs(pData)});
 	return cData;
 }
 
-pub fn vidSink(u: Receiver<Token>, s: SourceConf) {
+pub fn vidSink(u: Receiver<Token>) {
 	let c = spawnVectorVisualSink();
-	let mut x: ~[f32] = ~[0.0f32, ..900];
+	let mut x: Vec<f32> = std::vec::Vec::from_slice([0.0f32,.. 1300]);
 	loop {
 		match u.recv() {
 			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(x), _ => None }).collect()},
@@ -89,3 +90,4 @@ pub fn vidSink(u: Receiver<Token>, s: SourceConf) {
 		c.send(x.clone());
 	}
 }
+
