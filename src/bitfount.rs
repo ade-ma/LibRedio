@@ -7,10 +7,10 @@ extern crate num;
 extern crate rtlsdr;
 extern crate dsputils;
 
-use num::complex;
+use num::complex::Cmplx;
 use std::comm::Sender;
 
-pub fn rtlSource(v: Sender<Vec<f32>>, cFreq: u32, gain: u32, sRate: u32) {
+pub fn rtlSourceCmplx(v: Sender<Vec<Cmplx<f32>>>, cFreq: u32, gain: u32, sRate: u32) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, sRate);
@@ -24,12 +24,16 @@ pub fn rtlSource(v: Sender<Vec<f32>>, cFreq: u32, gain: u32, sRate: u32) {
 			Ok(x) => rtlsdr::dataToSamples(x),
 			Err(_) => break 'main,
 		};
-
-		let normalized: Vec<f32> = samples.iter().map(|x| x.norm()).collect();
-		v.send(normalized);
+		v.send(samples);
 	}
 	rtlsdr::stopAsync(devHandle);
 	rtlsdr::close(devHandle);
+}
+
+pub fn normify(u: Receiver<Vec<Cmplx<f32>>>, v: Sender<Vec<f32>>) {
+	loop {
+		v.send(u.recv().iter().map(|x| {x.norm().abs()}).collect())
+	}
 }
 
 pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {

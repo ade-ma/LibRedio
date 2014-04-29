@@ -1,7 +1,6 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
 
-//extern crate msgpack;
 extern crate native;
 extern crate dsputils;
 
@@ -9,7 +8,6 @@ use native::task::spawn;
 use std::comm::{Sender, Receiver, Select, Handle};
 
 use std::iter::AdditiveIterator;
-//use msgpack::{Array, Unsigned, Double, Value, String, Float};
 
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::net::udp::UdpSocket;

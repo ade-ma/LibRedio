@@ -1,7 +1,7 @@
 CC=rustc
 
-CFLAGS=-O -L ./lib -A unused-variable -A unused-imports
-OBJ = ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib #./lib/libsensors*.rlib ./lib/libinstant*.rlib
+CFLAGS=-L ./lib -A unused-variable -A unused-imports
+OBJ = ./lib/libkissfft*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib #./lib/libsensors*.rlib ./lib/libinstant*.rlib
 
 ifeq ($(ARCH),arm)
 CFLAGS+= --target arm-unknown-linux-gnueabihf -C linker=arm-linux-gnueabihf-gcc -C link-args=-Wl,-rpath-link,$(PWD)/lib/ -C target-feature=+vfp3,+v7,+neon,+vfp4
