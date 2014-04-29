@@ -83,7 +83,7 @@ pub fn vidSink(u: Receiver<Token>) {
 	let mut x: Vec<f32> = std::vec::Vec::from_slice([0.0f32,.. 1300]);
 	loop {
 		match u.recv() {
-			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(x), _ => None }).collect()},
+			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(-1.0*x), _ => None }).collect()},
 			Flt(d)  => {x.pop(); x.unshift(d)},
 			_ => (),
 		}
