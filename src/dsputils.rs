@@ -12,12 +12,6 @@ use std::iter::AdditiveIterator;
 use std::num::Zero;
 use std::f32;
 
-// helper functions useful for FFT work
-pub fn asRe ( d: ~[f32] ) -> ~[complex::Complex32] { return d.iter().map(|&x| {complex::Cmplx {re: x, im: 0.0}}).collect::<~[complex::Complex32]>();}
-pub fn asF32 ( d: ~[complex::Complex32] ) -> ~[f32] { return d.iter().map(|&x| {if num::abs(x.im) < 0.001 { x.re } else { let (m,p) = x.to_polar(); m*num::signum(p) }}).collect::<~[f32]>(); }
-pub fn asF64 ( d: ~[f32] ) -> ~[f64] { return d.iter().map(|&x| x as f64).collect(); }
-
-
 pub fn sum<T: Num+Ord+Primitive>(xs: &[T]) -> T {
 	let mut out: T = num::zero();
 	if xs.len() != 0 {
