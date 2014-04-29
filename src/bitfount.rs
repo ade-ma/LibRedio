@@ -1,18 +1,16 @@
 /* Copyright Ian Daniher, 2013, 2014.
-   Distributed under the terms of CC BY-NC-SA 4.0. */
+   Distributed under the terms of GPLv3. */
 #[ crate_id = "bitfount" ];
 #[ crate_type = "lib" ];
 
 extern crate num;
 extern crate rtlsdr;
 extern crate dsputils;
-extern crate kpn;
 
 use num::complex;
 use std::comm::Sender;
-use kpn::{Token, Chip, Flt, Packet};
 
-pub fn rtlSource(v: Sender<Token>, cFreq: u32, gain: u32, sRate: u32) {
+pub fn rtlSource(v: Sender<Vec<f32>>, cFreq: u32, gain: u32, sRate: u32) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, sRate);
@@ -27,31 +25,14 @@ pub fn rtlSource(v: Sender<Token>, cFreq: u32, gain: u32, sRate: u32) {
 			Err(_) => break 'main,
 		};
 
-		let normalized: ~[f32] = samples.iter().map(|x| x.norm()).collect();
-		v.send(Packet(normalized.move_iter().map(|x| Flt(x)).collect()))
+		let normalized: Vec<f32> = samples.iter().map(|x| x.norm()).collect();
+		v.send(normalized);
 	}
 	rtlsdr::stopAsync(devHandle);
 	rtlsdr::close(devHandle);
 }
 
-pub fn rtlSourceSync(v: Sender<Token>, cFreq: f32, gain: f32, sRate: f32) {
-	let bSize = 512;
-	let devHandle = rtlsdr::openDevice();
-	rtlsdr::setSampleRate(devHandle, sRate as u32);
-	rtlsdr::clearBuffer(devHandle);
-	rtlsdr::setGain(devHandle, (gain * 10.0) as u32);
-	rtlsdr::setFrequency(devHandle, cFreq as u32);
-
-	'main : loop {
-		let x = rtlsdr::readSync(devHandle, bSize as u32);
-		let samples = rtlsdr::dataToSamples(x);
-		let normalized: ~[f32] = samples.iter().map(|x| (x.re*x.re+x.im*x.im).sqrt()).collect();
-		v.send(Packet(normalized.move_iter().map(|x| Flt(x)).collect()))
-	}
-	rtlsdr::close(devHandle);
-}
-
-pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
+pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 	let bSize = 512;
 
 	// rtlsdr config
@@ -62,11 +43,8 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 
 	'main: loop {
 		trigger -= 1;
-		let samples = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Flt(d) => Some(d), _ => None }).collect(),
-			_ => ~[],
-		};
-		let s = dsputils::sum(samples.clone());
+		let samples = u.recv();
+		let s = dsputils::sum(samples.slice_from(0));
 
 		// wait for data or exit if data pipe is closed
 		// if the buffer's too big, throw it away to prevent OOM
@@ -98,7 +76,7 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
-			v.send(Packet(sampleBuffer.move_iter().map(|x| Flt(x)).collect()));
+			v.send(sampleBuffer);
 			println!("{:?}", (trigger, s, threshold));
 			sampleBuffer = vec!();
 		}
@@ -107,29 +85,22 @@ pub fn trigger(u: Receiver<Token>, v: Sender<Token>) {
 	// stop rtlsdr
 }
 
-pub fn filter(u: Receiver<Token>, v: Sender<Token>) {
-	let lpf: ~[f32] = dsputils::lpf(63, 0.02).move_iter().map(|x| x as f32).collect();
+pub fn filter(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
+	let lpf: Vec<f32> = dsputils::lpf(63, 0.02).move_iter().map(|x| x as f32).collect();
 	loop {
-		let sampleBuffer = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Flt(d) => Some(d), _ => None}).collect(),
-			_ => ~[],
-		};
-		let filtered: ~[f32] = dsputils::convolve(sampleBuffer, lpf.slice_from(0));
-		v.send(Packet(filtered.move_iter().map(|x| Flt(x)).collect()));
+		let x = u.recv();
+		let filtered: Vec<f32> = dsputils::convolve(x.slice_from(0), lpf.slice_from(0));
+		v.send(filtered);
 	}
 }
 
-pub fn discretize(u: Receiver<Token>, v: Sender<Token>) {
+pub fn discretize(u: Receiver<Vec<f32>>, v: Sender<uint>) {
 	loop {
-		let sampleBuffer = match u.recv() {
-			Packet(p) => p.move_iter().filter_map(|x| match x { Flt(d) => Some(d), _ => None}).collect(),
-			_ => ~[],
-		};
-		println!("{:?}", sampleBuffer.len());
+		let sampleBuffer = u.recv();
 		let max: f32 = dsputils::max(sampleBuffer.slice_from(0));
 		let thresholded: ~[uint] = sampleBuffer.iter().map(|&x| { (x > max/2f32) as uint }).collect();
 		for &x in thresholded.iter() {
-			v.send(Chip(x));
+			v.send(x);
 		}
 	}
 }

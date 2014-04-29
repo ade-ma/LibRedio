@@ -46,7 +46,7 @@ pub fn min<T: Float+Num>(xs: &[T]) -> T {
 }
 
 #[inline(always)]
-pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: ~[T], v: &[T]) -> ~[T] {
+pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
 	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).sum()}).collect()
 }
 
@@ -54,7 +54,7 @@ pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: ~[T], v: &[T]) -> ~[T] {
 //	m, uint, tap length
 //	fc, f32, decimal ratio of corner to sampling freqs
 
-pub fn window(m: uint) -> ~[f32] {
+pub fn window(m: uint) -> Vec<f32> {
 	let N = m as f32;
 	let pi = f32::consts::PI;
 	// blackman-nuttall coefficients
@@ -63,55 +63,51 @@ pub fn window(m: uint) -> ~[f32] {
 	// let a: ~[f32] = ~[0.35875, 0.48829, 0.14128, 0.01168];
 	// hamming window coefficients
 	// let a: ~[f32] = ~[0.54, 0.46, 0.0, 0.0];
-	let results: ~[f32] = range(0, m + 1).map(|x| {
+	range(0, m + 1).map(|x| {
 		let n = x as f32;
 		a[0] - a[1]*(2f32*pi*n/(N-1f32)).cos()+a[2]*(4f32*pi*n/(N-1f32)).cos()-a[3]*(6f32*pi*n/(N-1f32).cos())
-	}).collect();
-	return results;
+	}).collect()
 }
 
-pub fn sinc(m: uint, fc: f32) -> ~[f32] {
+pub fn sinc(m: uint, fc: f32) -> Vec<f32> {
 	// fc should always specify corner below nyquist
 	assert!(fc < 0.5);
 	let pi = f32::consts::PI;
-	let results: ~[f32] = range(0, m).map(|x| -> f32 {
+	range(0, m).map(|x| -> f32 {
 		let n = x as f32 - m as f32/2f32;
 		let mut r = 2f32*fc;
 		if n != 0.0 { r = (2f32*pi*fc*n).sin()/(pi*n); }
 		r
-	}).collect::<~[f32]>();
-	return results;
+	}).collect()
 }
 
 // low-pass filter
-pub fn lpf(m: uint, fc: f32) -> ~[f32] {
+pub fn lpf(m: uint, fc: f32) -> Vec<f32> {
 //	assert_eq!(m % 2, 1);
 	let w = window(m);
 	let s = sinc(m, fc);
-	let r: ~[f32] = w.iter().zip(s.iter()).map(|(&x, &y)| x * y).collect::<~[f32]>();
-	return r;
+	w.iter().zip(s.iter()).map(|(&x, &y)| x * y).collect()
 }
 
 // high-pass filter
-pub fn hpf(m: uint, fc: f32) -> ~[f32] {
-	let l: ~[f32] = lpf(m, fc);
-	let mut h: ~[f32] = l.iter().map(|&x| -x ).collect::<~[f32]>();
-	h[m/2-1] += 1.0;
+pub fn hpf(m: uint, fc: f32) -> Vec<f32> {
+	let l = lpf(m, fc);
+	let mut h: Vec<f32> = l.iter().map(|&x| -x ).collect();
+	*h.get_mut(m/2-1) += 1.0;
 	return h;
 }
 
 // band-stop filter
-pub fn bsf(m: uint, fc1: f32, fc2: f32) -> ~[f32] {
-	let lp: ~[f32] = lpf(m, fc1);
-	let hp: ~[f32] = hpf(m, fc2);
-	let mut h: ~[f32] = lp.iter().zip(hp.iter()).map(|(&x, &y)| x+y).collect::<~[f32]>();
-	h[m/2-1] -= 1.0;
+pub fn bsf(m: uint, fc1: f32, fc2: f32) -> Vec<f32> {
+	let lp = lpf(m, fc1);
+	let hp = hpf(m, fc2);
+	let mut h: Vec<f32> = lp.iter().zip(hp.iter()).map(|(&x, &y)| x+y).collect();
+	*h.get_mut(m/2-1) -= 1.0;
 	return h;
 }
 
 // bandpass filter
-pub fn bpf(m:uint, fc1: f32, fc2: f32) -> ~[f32] {
-	let b: ~[f32] = bsf(m, fc1, fc2);
-	let h: ~[f32] = b.iter().map(|&x| -x ).collect::<~[f32]>();
-	return h;
+pub fn bpf(m:uint, fc1: f32, fc2: f32) -> Vec<f32> {
+	let b = bsf(m, fc1, fc2);
+	b.iter().map(|&x| -x ).collect()
 }

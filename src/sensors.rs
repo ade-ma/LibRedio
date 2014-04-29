@@ -7,13 +7,13 @@ use std::comm::{Receiver, Sender};
 
 // temperature sensor pulse duration modulated binary protocol symbol matcher
 pub fn validTokenA(u: Receiver<Token>, v: Sender<Token>) {
-	let mut x: Token = Chip(0);
+	let mut x: Token = 0;
 	loop {
 		match (x.clone(), u.recv()) {
-			(Dur(~Chip(1), 1e-6..6e-4), Dur(~Chip(0), 1.7e-3..2.6e-3)) => {v.send(Chip(0))}
-			(Dur(~Chip(1), 1e-6..6e-4), Dur(~Chip(0), 3.6e-3..4.6e-3)) => {v.send(Chip(1))}
-			(_, Dur(~Chip(0), 8.7e-3..1e1)) => {v.send(Break("silence"))}
-			(Dur(~Chip(0), 8.7e-3..1e1), _) => {v.send(Break("silence"))}
+			(Dur(1, 1e-6..6e-4), Dur(0, 1.7e-3..2.6e-3)) => {v.send(Chip(0))}
+			(Dur(1, 1e-6..6e-4), Dur(0, 3.6e-3..4.6e-3)) => {v.send(Chip(1))}
+			(_, Dur(0, 8.7e-3..1e1)) => {v.send(Break("silence"))}
+			(Dur(0, 8.7e-3..1e1), _) => {v.send(Break("silence"))}
 			(a, b) => {println!("{:?}", (&a,&b)); x = b.clone();}
 		}
 	}
