@@ -72,8 +72,9 @@ pub fn vidSink(pDataC: comm::Receiver<Vec<f32>>) {
 }
 pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
 	sdl2::init(sdl2::InitVideo);
-	let renderers: Vec<~sdl2::render::Renderer> = range(0, u.len()).map( |_| -> ~sdl2::render::Renderer {
-		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
+	let l = u.len() as int;
+	for x in u.move_iter() {
+		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300/l, 600, sdl2::video::Shown) {
 			Ok(window) => window,
 			Err(err) => fail!("")
 		};
@@ -81,27 +82,19 @@ pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
 			Ok(renderer) => renderer,
 			Err(err) => fail!("")
 		};
-		renderer.set_logical_size(1300, 600);
-		renderer
-	}).collect::<Vec<~sdl2::render::Renderer>>();
-	let sel = comm::Select::new();
-	let mut hs: Vec<comm::Handle<Vec<f32>>> = vec!();
-	for x in u.iter() {
-		let mut h = sel.handle(x);
-		unsafe {
-			h.add();
-		}
-		hs.push(h);
-	};
-	let hids: ~[uint] = hs.iter().map(|x| x.id()).collect();
-	'main : loop {
-		match sdl2::event::poll_event() {
-			sdl2::event::QuitEvent(_) => break 'main,
-			_ => {}
-		}
-		let y = sel.wait2(true);
-		let i = hids.iter().enumerate().filter_map(|(a, &b)| if b == y { Some(a) } else { None }).next().unwrap();
-		drawVectorAsBarPlot(*renderers.get(i), u[i].recv());
+		renderer.set_logical_size(1300/l, 600);
+		native::task::spawn(proc() {
+		'main : loop {
+			match sdl2::event::poll_event() {
+				sdl2::event::QuitEvent(_) => break 'main,
+				_ => {}
+			};
+			match x.try_recv() {
+				Ok(d) => drawVectorAsBarPlot(renderer, d),
+				Err(_) => {}
+			};
+			renderer.present();
+		}});
 	}
 }
 
