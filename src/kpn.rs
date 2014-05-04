@@ -118,16 +118,3 @@ pub fn eat(x: &[uint], is: ~[uint]) -> Vec<uint> {
 	}
 	return out
 }
-
-// temperature sensor pulse duration modulated binary protocol symbol matcher
-pub fn validTokenA(u: Receiver<Token>, v: Sender<Option<uint>>) {
-	loop {
-		match u.recv() {
-			Dur(1, 1e-6..6e-4) => match u.recv () {
-				Dur(0, 1.7e-3..2.6e-3) => v.send(Some(0)),
-				Dur(0, 3.6e-3..4.6e-3) => v.send(Some(1)),
-				_ => v.send(None)},
-			_ => v.send(None),
-		}
-	}
-}
