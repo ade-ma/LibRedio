@@ -48,7 +48,6 @@ pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 		// if the buffer's too big, throw it away to prevent OOM
 		if sampleBuffer.len() > 1000*triggerDuration as uint*bSize {
 			sampleBuffer = vec!(0.0);
-			println!("{:?}", threshold);
 		}
 
 		// if we're just running, set the threshold equal to the sum of the first sample chunk
@@ -75,7 +74,6 @@ pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 		// if we just finished triggering, filter, discretize, and send samples
 		if trigger == 0 {
 			v.send(sampleBuffer);
-			println!("{:?}", (trigger, s, threshold));
 			sampleBuffer = vec!();
 		}
 	}
