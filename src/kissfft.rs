@@ -16,7 +16,7 @@ extern "C" {
 	fn kiss_fft_cleanup();
 }
 
-pub fn FFT(pin: comm::Receiver<Vec<complex::Cmplx<f32>>>, cout: comm::Sender<Vec<complex::Cmplx<f32>>>, blockSize: u32, inv: u32) {
+pub fn fft(pin: comm::Receiver<Vec<complex::Cmplx<f32>>>, cout: comm::Sender<Vec<complex::Cmplx<f32>>>, blockSize: u32, inv: u32) {
 	let kiss_fft_cfg = unsafe {kiss_fft_alloc(blockSize, inv, ptr::null(), ptr::null())};
 	loop {
 		let mut fout: Vec<complex::Cmplx<f32>> = vec::Vec::with_capacity(blockSize as uint);
