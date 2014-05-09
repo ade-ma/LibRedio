@@ -19,7 +19,6 @@ use std::io::{Listener, Acceptor};
 
 #[deriving(Eq, Clone, Show)]
 pub enum Token {
-	Break(&'static str),
 	Dur(uint, f32),
 	Run(uint, uint),
 }
