@@ -6,7 +6,6 @@ extern crate kpn;
 use native::task::spawn;
 use std::f32;
 use std::comm;
-use kpn::{Token, Packet, Flt, SourceConf};
 
 pub fn drawVectorAsBarPlot (screen: &sdl::video::Surface, mut data: ~[f32]){
 	let len: uint = data.len() as uint;
@@ -40,7 +39,7 @@ pub fn drawVectorAsBarPlot (screen: &sdl::video::Surface, mut data: ~[f32]){
 	}).len();
 }
 
-pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
+pub fn vidSink(pDataC: comm::Port<~[f32]>) {
 	let mut lastDraw: u64 = 0;
 	sdl::init([sdl::InitVideo]);
 	sdl::wm::set_caption("rust-sdl", "rust-sdl");
@@ -69,27 +68,3 @@ pub fn doWorkWithPEs (pDataC: comm::Port<~[f32]>) {
 	}
 	sdl::quit();
 }
-
-pub fn spawnVectorVisualSink() -> comm::Chan<~[f32]> {
-	let (pData, cData): (comm::Port<~[f32]>, comm::Chan<~[f32]>) = comm::Chan::new();
-	spawn(proc() {
-		doWorkWithPEs(pData);
-	});
-	return cData;
-}
-
-pub fn vidSink(U: Port<Token>, S: SourceConf) {
-	let c = spawnVectorVisualSink();
-	let mut x: ~[f32] = ~[0.0f32, ..102];
-	//let mut y = true;
-	loop {
-		match U.recv() {
-			Packet(p) => {x = p.move_iter().filter_map(|x| match x { Flt(x) => Some(x), _ => None }).to_owned_vec()},
-			Flt(d)  => {x.pop(); x.unshift(d)},
-			_ => (),
-		}
-		c.send(x.clone());
-		//y = true^y;
-	}
-}
-
