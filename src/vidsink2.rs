@@ -33,7 +33,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: Vec<f32
 	let rs: ~[sdl2::rect::Rect] = range(0, data.len()).map(|i| {
 		let &x = data.get(i);
 		let mut yf = if dmin > 0.0 { height } else {height*0.5f32};
-		let mut hf = -1f32*scale*x;
+		let mut hf = scale*x;
 		if x > 0f32 {yf -= x*scale;}
 		if x < 0f32 {hf = -1f32*hf;}
 		sdl2::rect::Rect {
@@ -45,7 +45,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: Vec<f32
 	renderer.fill_rects(rs.slice_from(0));
 }
 
-pub fn vidSink(pDataC: comm::Receiver<Vec<f32>>) {
+pub fn vidSinkVecs(pDataC: comm::Receiver<Vec<f32>>) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
 		Ok(window) => window,
 		Err(err) => fail!("")
@@ -66,6 +66,29 @@ pub fn vidSink(pDataC: comm::Receiver<Vec<f32>>) {
 			}
 			_ => ()
 		}
+		renderer.present()
+	}
+	sdl2::quit();
+}
+pub fn vidSink(pDataC: comm::Receiver<f32>, size: uint) {
+	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
+		Ok(window) => window,
+		Err(err) => fail!("")
+	};
+	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+		Ok(renderer) => renderer,
+		Err(err) => fail!("")
+	};
+	let mut data: Vec<f32> = range(0, size).map(|_|0f32).collect();
+	renderer.set_logical_size(1300, 600);
+	'main : loop {
+		match sdl2::event::poll_event() {
+			sdl2::event::QuitEvent(_) => break 'main,
+			_ => {}
+		}
+		data.pop();
+		data.unshift(pDataC.recv());
+		drawVectorAsBarPlot(renderer, data.clone());
 		renderer.present()
 	}
 	sdl2::quit();
