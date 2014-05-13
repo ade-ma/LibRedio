@@ -154,13 +154,13 @@ pub fn fork<T: Clone+Send>(u: Receiver<T>, v: ~[Sender<T>]) {
 	}
 }
 
-pub fn mulAcross<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T) {
+pub fn mul<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	loop {
 		v.send(u.recv()*c)
 	}
 }
 
-pub fn mulAcrossVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
+pub fn mulVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.recv().iter().zip(c.iter()).map(|(&x, &y)| x*y).collect())
 	}
@@ -175,6 +175,18 @@ pub fn sumAcross<T: Float+Send>(u: ~[Receiver<T>], v: Sender<T>, c: T) {
 pub fn sumAcrossVecs<T: Float+Send>(u: ~[Receiver<Vec<T>>], v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c.clone(), |b, a| a.iter().zip(b.iter()).map(|(&d, &e)| d+e).collect()))
+	}
+}
+
+pub fn sumVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
+	loop {
+		v.send(u.recv().iter().zip(c.iter()).map(|(&x, &y)| x+y).collect())
+	}
+}
+
+pub fn sum<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T){
+	loop {
+		v.send(u.recv()+c);
 	}
 }
 
