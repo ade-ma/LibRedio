@@ -125,8 +125,17 @@ pub fn softSource<T: Send+Clone>(v: Sender<T>, f: |x: Sender<T>|) {
 	r.recv();
 }
 
-pub fn matcher<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: |x: Messages<T>,v: Sender<U>|) {
+pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: |x: Messages<T>,v: Sender<U>|) {
 	f(u.iter(), v)
+}
+
+pub fn looperOptional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<T>){
+	loop {
+		match u.recv() {
+			Some(d) => v.send(d),
+			None => ()
+		}
+	}
 }
 
 pub fn crossApplicator<T: Clone+Send, U: Clone+Send>(u: Receiver<T>, v: Sender<U>, f: |T|->U) {
@@ -214,13 +223,27 @@ pub fn delayVecs<T: Send+Clone>(u: Receiver<T>, v: Sender<T>, c: T) {
 	delay(u, v, c);
 }
 
-pub fn shaper<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<Vec<T>>, l: uint) {
+pub fn shaperOptional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<Vec<T>>, l: uint) {
 	let mut x = vec!();
 	loop {
 		match u.recv() {
 			Some(y) => x.push(y),
 			None if x.len() == l => {v.send(x.clone()); x = vec!();},
 			None => {x = vec!();},
+		}
+	}
+}
+
+pub fn shaper<T: Send+Clone>(u: Receiver<T>, v: Sender<Vec<T>>, l: uint) {
+	loop {
+		v.send(range(0, l).map(|_| u.recv()).collect())
+	}
+}
+
+pub fn shaperVecs<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
+	for x in u.iter() {
+		for y in x.move_iter() {
+			v.send(y)
 		}
 	}
 }
