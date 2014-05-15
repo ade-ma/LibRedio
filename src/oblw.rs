@@ -13,20 +13,6 @@ pub struct Run {
 	pub ct: uint
 }
 
-pub fn rle<T: Ord+Clone+Primitive+ToPrimitive>(In: Vec<T>) -> Vec<Run> {
-	let mut Out: Vec<Run> = vec!(Run { v: In.get(0).clone().to_uint().unwrap(), ct: 0u });
-	for i in In.iter() {
-		if (i.to_uint().unwrap() == Out.last().unwrap().v) {
-			let l = Out.len();
-			Out.get_mut(l-1).ct += 1;
-		}
-		else {
-			Out.push(Run {v: i.clone().to_uint().unwrap(), ct: 1u });
-		}
-	};
-	return Out
-}
-
 pub fn rld(In: Vec<Run>) -> Vec<uint> {
 	let mut Out: Vec<uint> = vec!();
 	for i in In.iter() {
