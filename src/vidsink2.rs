@@ -3,7 +3,6 @@ extern crate dsputils;
 extern crate native;
 
 use std::comm;
-use std::cast;
 use native::task::spawn;
 use std::comm::{Receiver, Sender, Select, Handle, channel};
 
@@ -30,7 +29,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: Vec<f32
 	let scale: f32 = height / ((dmax-dmin));
 	let width = if width > 1.0 { width } else { 1.0 };
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 7));
-	let rs: ~[sdl2::rect::Rect] = range(0, data.len()).map(|i| {
+	let rs: Vec<sdl2::rect::Rect> = range(0, data.len()).map(|i| {
 		let &x = data.get(i);
 		let mut yf = if dmin > 0.0 { height } else {height*0.5f32};
 		let mut hf = scale*x;
@@ -62,7 +61,7 @@ pub fn vidSinkVecs(pDataC: comm::Receiver<Vec<f32>>) {
 		}
 		match pDataC.try_recv() {
 			Ok(d) => {
-				drawVectorAsBarPlot(renderer, d);
+				drawVectorAsBarPlot(&renderer, d);
 			}
 			_ => ()
 		}
@@ -88,7 +87,7 @@ pub fn vidSink(pDataC: comm::Receiver<f32>, size: uint) {
 		}
 		data.pop();
 		data.unshift(pDataC.recv());
-		drawVectorAsBarPlot(renderer, data.clone());
+		drawVectorAsBarPlot(&renderer, data.clone());
 		renderer.present()
 	}
 	sdl2::quit();
@@ -101,7 +100,7 @@ pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
 			Ok(window) => window,
 			Err(err) => fail!("")
 		};
-		let renderer: ~sdl2::render::Renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+		let renderer: sdl2::render::Renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
 			Ok(renderer) => renderer,
 			Err(err) => fail!("")
 		};
@@ -113,7 +112,7 @@ pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
 				_ => {}
 			};
 			match x.try_recv() {
-				Ok(d) => drawVectorAsBarPlot(renderer, d),
+				Ok(d) => drawVectorAsBarPlot(&renderer, d),
 				Err(_) => {}
 			};
 			renderer.present();

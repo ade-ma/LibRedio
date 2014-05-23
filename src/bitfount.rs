@@ -7,10 +7,10 @@ extern crate num;
 extern crate rtlsdr;
 extern crate dsputils;
 
-use num::complex::Cmplx;
+use num::complex::Complex;
 use std::comm::Sender;
 
-pub fn rtlSourceCmplx(v: Sender<Vec<Cmplx<f32>>>, cFreq: u32, gain: u32, sRate: u32) {
+pub fn rtlSourceCmplx(v: Sender<Vec<Complex<f32>>>, cFreq: u32, gain: u32, sRate: u32) {
 	let bSize = 512;
 	let devHandle = rtlsdr::openDevice();
 	rtlsdr::setSampleRate(devHandle, sRate);
@@ -94,7 +94,7 @@ pub fn discretize(u: Receiver<Vec<f32>>, v: Sender<uint>) {
 	loop {
 		let sampleBuffer = u.recv();
 		let max: f32 = dsputils::max(sampleBuffer.slice_from(0));
-		let thresholded: ~[uint] = sampleBuffer.iter().map(|&x| { (x > max/2f32) as uint }).collect();
+		let thresholded: Vec<uint> = sampleBuffer.iter().map(|&x| { (x > max/2f32) as uint }).collect();
 		for &x in thresholded.iter() {
 			v.send(x);
 		}

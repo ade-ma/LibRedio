@@ -1,7 +1,8 @@
 extern crate libc;
+extern crate core;
 use libc::{c_int, c_void, size_t};
 use std::ptr::null;
-use std::cast;
+use core::mem::transmute;
 use std::vec;
 use std::comm;
 use std::task;
@@ -48,7 +49,7 @@ pub fn pulseSource(cData: comm::Sender<Vec<f32>>, sRate: uint, bSize: uint) {
 		assert_eq!(error, 0);
 		'main : loop {
 			let mut buffer: Vec<i16> = vec::Vec::from_elem(bSize, 0i16);
-			pa_simple_read(s, cast::transmute(buffer.as_mut_ptr()), (bSize*2) as u64, &error);
+			pa_simple_read(s, transmute(buffer.as_mut_ptr()), (bSize*2) as u64, &error);
 			assert_eq!(error, 0);
 			let f32Buffer: Vec<f32> = buffer.iter().map(|&i| (i as f32)).collect();
 			cData.send(f32Buffer);
@@ -66,7 +67,7 @@ pub fn pulseSink(pData: Receiver<~[f32]>, sRate: uint) {
 			let samps: ~[f32] = pData.recv();
 			if (samps == ~[]) { break 'main }
 			let size: size_t = (samps.len() as u64)*4;
-			pa_simple_write(s, cast::transmute(samps.as_ptr()), size, &error);
+			pa_simple_write(s, transmute(samps.as_ptr()), size, &error);
 		}
 	}
 }

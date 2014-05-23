@@ -30,12 +30,12 @@ pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(xs: &[T]) -> f32 {
 }
 
 #[inline(always)]
-pub fn max<T: Float+Num>(xs: &[T]) -> T {
+pub fn max<T: FloatMath+Num>(xs: &[T]) -> T {
 	xs.iter().fold(xs[0], |a, &b| a.max(b))
 }
 
 #[inline(always)]
-pub fn min<T: Float+Num>(xs: &[T]) -> T {
+pub fn min<T: FloatMath+Num>(xs: &[T]) -> T {
 	xs.iter().fold(xs[0], |a, &b| a.min(b))
 }
 

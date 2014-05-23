@@ -28,7 +28,7 @@ pub fn B2b(bytes: &[u8]) -> bitv::Bitv {
 }
 
 pub fn v2b(uints: Vec<uint>) -> bitv::Bitv {
-	let y: ~[bool] = uints.iter().map(|&x| x == 1u).collect();
+	let y: Vec<bool> = uints.iter().map(|&x| x == 1u).collect();
 	return bitv::from_bools(y.slice_from(0))
 }
 

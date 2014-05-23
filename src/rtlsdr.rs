@@ -13,7 +13,7 @@ use std::slice;
 use std::comm::{Sender, Receiver, channel};
 use std::ptr;
 use std::num;
-
+use std::vec;
 
 #[link(name= "rtlsdr")]
 
@@ -26,7 +26,7 @@ extern "C" {
 	fn rtlsdr_set_tuner_gain(dev: *c_void, gain: u32) -> c_int;
 	fn rtlsdr_set_tuner_gain_mode(dev: *c_void, mode: u32) -> c_int;
 	fn rtlsdr_read_sync(dev: *c_void, buf: *mut u8, len: u32, n_read: *c_int) -> c_int;
-	fn rtlsdr_read_async(dev: *c_void, cb: extern "C" fn(*u8, u32, &Sender<~[u8]>), chan: &Sender<~[u8]>, buf_num: u32, buf_len: u32) -> c_int;
+	fn rtlsdr_read_async(dev: *c_void, cb: extern "C" fn(*u8, u32, &Sender<Vec<u8>>), chan: &Sender<Vec<u8>>, buf_num: u32, buf_len: u32) -> c_int;
 	fn rtlsdr_cancel_async(dev: *c_void) -> c_int;
 	fn rtlsdr_set_sample_rate(dev: *c_void, sps: u32) -> c_int;
 	fn rtlsdr_get_sample_rate(dev: *c_void) -> u32;
@@ -110,21 +110,21 @@ pub fn setGainAuto(device: *c_void) {
 	}
 }
 
-extern fn rtlsdr_callback(buf: *u8, len: u32, chan: &Sender<~[u8]>) {
+extern fn rtlsdr_callback(buf: *u8, len: u32, chan: &Sender<Vec<u8>>) {
 	unsafe {
-		let data = slice::raw::from_buf_raw(buf, len as uint);
+		let data = vec::raw::from_buf(buf, len as uint);
 		chan.send(data);
 	}
 }
 
-pub fn readAsync(dev: *c_void, blockSize: u32) -> ~Receiver<~[u8]> {
+pub fn readAsync(dev: *c_void, blockSize: u32) -> Receiver<Vec<u8>> {
 	let (chan, port) = channel();
 	spawn(proc() {
 		unsafe{
 			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, blockSize*2);
 		}
 	});
-	return ~port;
+	return port;
 }
 
 pub fn stopAsync(dev: *c_void) -> () {
@@ -146,6 +146,6 @@ pub fn readSync(dev: *c_void, ct: c_uint) -> ~[u8] {
 }
 
 fn i2f(i: u8) -> f32 {i as f32/127.0 - 1.0}
-pub fn dataToSamples(data: ~[u8]) -> Vec<complex::Cmplx<f32>> {
-	data.chunks(2).map(|i| complex::Cmplx{re:i2f(i[0]), im:i2f(i[1])}).collect()
+pub fn dataToSamples(data: Vec<u8>) -> Vec<complex::Complex<f32>> {
+	data.slice_from(0).chunks(2).map(|i| complex::Complex{re:i2f(i[0]), im:i2f(i[1])}).collect()
 }

@@ -2,6 +2,7 @@
 extern crate libc;
 extern crate native;
 extern crate libusb;
+extern crate core;
 
 use libusb::*;
 use libc::{c_int, c_void, size_t, malloc, free};
@@ -9,7 +10,7 @@ use std::intrinsics;
 use std::slice;
 use std::result::Result;
 use std::comm::{Receiver, Sender};
-use std::cast::transmute;
+use core::mem::transmute;
 use std::mem::size_of;
 use std::vec::Vec;
 
@@ -64,7 +65,7 @@ impl Context {
 		}
 	}
 
-	pub fn listDevices(&self) -> ~[Device] {
+	pub fn listDevices(&self) -> Vec<Device> {
 		unsafe{
 			let mut list: *mut *mut libusb_device = intrinsics::init();
 			let num_devices = libusb_get_device_list(self.ptr(), &mut list);
@@ -114,7 +115,7 @@ impl Context {
 
 extern fn rust_usb_callback(transfer: *mut libusb_transfer) {
 	unsafe {
-		let chan: ~Sender<()> = transmute((*transfer).user_data);
+		let chan: Box<Sender<()>> = transmute((*transfer).user_data);
 		chan.send(());
 	}
 }
@@ -153,9 +154,9 @@ pub struct Device {
 }
 
 impl Device {
-	pub fn descriptor(&self) -> ~libusb_device_descriptor {
+	pub fn descriptor(&self) -> Box<libusb_device_descriptor> {
 		unsafe{
-			let mut d: ~libusb_device_descriptor = ~intrinsics::uninit();
+			let mut d: Box<libusb_device_descriptor> = box intrinsics::uninit();
 			libusb_get_device_descriptor(self.dev, &mut *d as *mut libusb_device_descriptor);
 			d
 		}
@@ -257,7 +258,7 @@ impl DeviceHandle {
 		(*t).timeout = 0;
 		(*t).length = length as c_int;
 		(*t).callback = rust_usb_callback;
-		(*t).user_data = transmute(~chan);
+		(*t).user_data = transmute(box chan);
 		(*t).buffer = buffer;
 
 		libusb_submit_transfer(t);
