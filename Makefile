@@ -1,12 +1,12 @@
 CC=rustc
 
 CFLAGS=-L ./lib -A unused-variable -A unused-imports
-OBJ = ./lib/libkissfft*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib ./lib/liblibusb*.rlib ./lib/libusb*.rlib ./lib/liboblw*.rlib ./lib/libtoml*.rlib ./lib/liboutlet*.rlib ./lib/libpasimple*.rlib
-
+OBJ = ./lib/libkissfft*.rlib ./lib/librtlsdr*.rlib ./lib/libdsputils*.rlib ./lib/libkpn*.rlib ./lib/libbitfount*.rlib ./lib/liblibusb*.rlib ./lib/libusb*.rlib ./lib/liboblw*.rlib
+# ./lib/libtoml*.rlib ./lib/liboutlet*.rlib
 ifeq ($(ARCH),arm)
 CFLAGS+= --target arm-unknown-linux-gnueabihf -C linker=arm-linux-gnueabihf-gcc -C link-args=-Wl,-rpath-link,$(PWD)/lib/ -C target-feature=+vfp3,+v7,+neon,+vfp4
 else
-OBJ += ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib #./lib/libsndfile*.rlib ./lib/libwavio*.rlib
+OBJ += ./lib/libsdl2*.rlib ./lib/libvidsink2*.rlib ./lib/libpasimple*.rlib
 endif
 
 all: $(OBJ)

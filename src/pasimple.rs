@@ -57,15 +57,15 @@ pub fn pulseSource(cData: comm::Sender<Vec<f32>>, sRate: uint, bSize: uint) {
 		}
 }
 
-pub fn pulseSink(pData: Receiver<~[f32]>, sRate: uint) {
+pub fn pulseSink(pData: Receiver<Vec<f32>>, sRate: uint) {
 	let ss = pa_sample_spec { format: 5, rate: sRate as u32, channels: 1 };
 	let error: c_int = 0;
 	unsafe {
 		let s: *pa_simple = pa_simple_new(null(), "rust-pa-simple-sink".to_c_str().unwrap(), 1, null(), "pa-sink".to_c_str().unwrap(), &ss, null(), null(), &error);
 		println!("{:?}", pa_simple_get_latency(s, &error));
 		'main : loop {
-			let samps: ~[f32] = pData.recv();
-			if (samps == ~[]) { break 'main }
+			let samps = pData.recv();
+			if (samps.length() == 0) { break 'main }
 			let size: size_t = (samps.len() as u64)*4;
 			pa_simple_write(s, transmute(samps.as_ptr()), size, &error);
 		}
