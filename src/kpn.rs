@@ -17,13 +17,13 @@ use std::io::net::unix::UnixListener;
 use std::io::{Listener, Acceptor};
 
 // run length encoding
-pub fn rle(u: Receiver<uint>, v: Sender<(uint, uint)>) {
+pub fn rle<T: Eq+Clone+Send>(u: Receiver<T>, v: Sender<(T, uint)>) {
 	let mut x = u.recv();
 	let mut i: uint = 1;
 	loop {
 		let y = u.recv();
 		if y != x {
-			v.send((x, i));
+			v.send((x.clone(), i));
 			i = 1;
 		}
 		else {i = i + 1}
@@ -32,7 +32,7 @@ pub fn rle(u: Receiver<uint>, v: Sender<(uint, uint)>) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle(u: Receiver<(uint, uint)>, v: Sender<(uint, f32)>, sRate: uint) {
+pub fn dle<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<(T, f32)>, sRate: uint) {
 	loop {
 		match u.recv() {
 			(x, ct) => v.send( ( x, ct as f32 / sRate as f32) ),
@@ -41,16 +41,16 @@ pub fn dle(u: Receiver<(uint, uint)>, v: Sender<(uint, f32)>, sRate: uint) {
 }
 
 // duration length decoding
-pub fn dld(u: Receiver<(uint, f32)>, v: Sender<(uint, uint)>, sRate: f32) {
+pub fn dld<T: Eq+Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, sRate: f32) {
 	loop {
 		match u.recv() {
-			(x, dur) => v.send( ( x, (dur * sRate) as uint)),
+			(x, dur) => for _ in range(0, (dur*sRate) as uint) {v.send(x.clone())}
 		}
 	}
 }
 
 // run length decoding
-pub fn rld(u: Receiver<(uint, uint)>, v: Sender<uint>) {
+pub fn rld<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<T>) {
 	loop {
 		match u.recv() {
 			(x, ct) => for _ in range(0, ct){v.send(x.clone())},
@@ -178,6 +178,12 @@ pub fn mulVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>)
 pub fn sumAcross<T: Float+Send>(u: ~[Receiver<T>], v: Sender<T>, c: T) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b+a))
+	}
+}
+
+pub fn mulAcross<T: Float+Send>(u: ~[Receiver<T>], v: Sender<T>, c: T) {
+	loop {
+		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b*a))
 	}
 }
 
