@@ -7,13 +7,14 @@ extern crate libc;
 use num::complex;
 
 use native::task::spawn;
-use std::str;
 use libc::{c_int, c_uint, c_void};
 use std::slice;
 use std::comm::{Sender, Receiver, channel};
 use std::ptr;
 use std::num;
 use std::vec;
+use std::string;
+use std::str;
 
 #[link(name= "rtlsdr")]
 
@@ -73,7 +74,7 @@ pub fn openDevice() -> *c_void {
 	}
 }
 
-pub fn getDeviceName(devIndex: u32) -> ~str {
+pub fn getDeviceName(devIndex: u32) -> string::String {
 	unsafe {
 		let deviceString: *i8 = rtlsdr_get_device_name(devIndex);
 		return str::raw::from_c_str(deviceString);
