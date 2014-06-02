@@ -12,7 +12,7 @@ use std::iter::AdditiveIterator;
 use std::num::Zero;
 use std::f32;
 
-pub fn sum<T: Num+Ord+Primitive>(xs: &[T]) -> T {
+pub fn sum<T: Num+Primitive>(xs: &[T]) -> T {
 	let mut out: T = num::zero();
 	if xs.len() != 0 {
 		for i in range(0, xs.len()) {
@@ -23,7 +23,7 @@ pub fn sum<T: Num+Ord+Primitive>(xs: &[T]) -> T {
 }
 
 #[inline(always)]
-pub fn mean<T: Num+Ord+Primitive+ToPrimitive>(xs: &[T]) -> f32 {
+pub fn mean<T: Num+Primitive+ToPrimitive>(xs: &[T]) -> f32 {
 	let l = xs.len() as f32;
 	let s = sum(xs).to_f32().unwrap()/l;
 	return s/l
@@ -40,7 +40,7 @@ pub fn min<T: FloatMath+Num>(xs: &[T]) -> T {
 }
 
 #[inline(always)]
-pub fn convolve<T: Num+Ord+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
+pub fn convolve<T: Num+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
 	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).sum()}).collect()
 }
 
