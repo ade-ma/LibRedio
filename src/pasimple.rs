@@ -1,5 +1,6 @@
 extern crate libc;
 extern crate core;
+extern crate debug;
 use libc::{c_int, c_void, size_t};
 use std::ptr::null;
 use core::mem::transmute;
@@ -65,7 +66,7 @@ pub fn pulseSink(pData: Receiver<Vec<f32>>, sRate: uint) {
 		println!("{:?}", pa_simple_get_latency(s, &error));
 		'main : loop {
 			let samps = pData.recv();
-			if (samps.length() == 0) { break 'main }
+			if (samps.len() == 0) { break 'main }
 			let size: size_t = (samps.len() as u64)*4;
 			pa_simple_write(s, transmute(samps.as_ptr()), size, &error);
 		}
