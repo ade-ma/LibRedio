@@ -41,7 +41,7 @@ pub fn dle<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<(T, f32)>, sRate:
 }
 
 // duration length decoding
-pub fn dld<T: Eq+Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, sRate: f32) {
+pub fn dld<T: Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, sRate: f32) {
 	loop {
 		match u.recv() {
 			(x, dur) => for _ in range(0, (dur*sRate) as uint) {v.send(x.clone())}
@@ -58,17 +58,17 @@ pub fn rld<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<T>) {
 	}
 }
 
-pub fn decoder(u: Receiver<Vec<uint>>, v: Sender<Vec<uint>>, t: ~[uint]) {
+pub fn decoder(u: Receiver<Vec<uint>>, v: Sender<Vec<uint>>, t: &[uint]) {
 	loop {
 		let p = u.recv();
-		if p.len() >= dsputils::sum(t.slice_from(0)) {
-			let b = eat(p.slice_from(0), t.clone());
+		if p.len() >= dsputils::sum(t) {
+			let b = eat(p.slice_from(0), t);
 			v.send(b);
 		};
 	}
 }
 
-pub fn differentiator<T: Eq+Send+Clone>(u: Receiver<T>, v: Sender<T>) {
+pub fn differentiator<T: PartialEq+Send+Clone>(u: Receiver<T>, v: Sender<T>) {
 	let mut x = u.recv();
 	loop {
 		let y = u.recv();
@@ -78,6 +78,16 @@ pub fn differentiator<T: Eq+Send+Clone>(u: Receiver<T>, v: Sender<T>) {
 		}
 	}
 }
+
+pub fn dxdt<T: Send+Clone+Num>(u: Receiver<T>, v: Sender<T>) {
+	let mut x = u.recv();
+	loop {
+		let y = u.recv();
+		x = y - x;
+		v.send(x.clone());
+	}
+}
+		
 
 pub fn unpacketizer<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 	loop {
@@ -98,7 +108,7 @@ pub fn b2d(xs: &[uint]) -> uint {
 	return range(0, xs.len()).map(|i| (1<<(xs.len()-i-1))*xs[i]).sum();
 }
 
-pub fn eat(x: &[uint], is: ~[uint]) -> Vec<uint> {
+pub fn eat(x: &[uint], is: &[uint]) -> Vec<uint> {
 	let mut i = 0;
 	let mut out: Vec<uint> = vec!();
 	for &index in is.iter() {
