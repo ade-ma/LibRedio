@@ -7,7 +7,7 @@ use native::task::spawn;
 use std::comm::{Receiver, Sender, Select, Handle, channel};
 
 
-pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
+pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
@@ -100,7 +100,7 @@ pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
 			Ok(window) => window,
 			Err(err) => fail!("")
 		};
-		let renderer: sdl2::render::Renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+		let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
 			Ok(renderer) => renderer,
 			Err(err) => fail!("")
 		};
