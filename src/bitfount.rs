@@ -1,7 +1,5 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of GPLv3. */
-#[ crate_id = "bitfount" ];
-#[ crate_type = "lib" ];
 
 extern crate num;
 extern crate rtlsdr;
@@ -79,15 +77,6 @@ pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 	}
 
 	// stop rtlsdr
-}
-
-pub fn filter(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
-	let lpf: Vec<f32> = dsputils::lpf(63, 0.02).move_iter().map(|x| x as f32).collect();
-	loop {
-		let x = u.recv();
-		let filtered: Vec<f32> = dsputils::convolve(x.slice_from(0), lpf.slice_from(0));
-		v.send(filtered);
-	}
 }
 
 pub fn discretize(u: Receiver<Vec<f32>>, v: Sender<uint>) {
