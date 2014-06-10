@@ -1,4 +1,4 @@
-#![crate_id = "github.com/mneumann/rust-toml#toml:0.1"]
+#![crate_id = "github.com/mneumann/toml"]
 #![desc = "A TOML configuration file parser for Rust"]
 #![license = "MIT"]
 #![crate_type = "lib"]
@@ -17,7 +17,7 @@ extern crate collections;
 use std::char;
 use std::mem;
 
-use collections::hashmap::{HashMap,MoveEntries};
+use std::collections::hashmap::{HashMap,MoveEntries};
 use std::vec::MoveItems;
 
 use std::io::{File,IoError,IoResult,EndOfFile};
@@ -35,28 +35,34 @@ pub enum Value {
     PosInt(u64),
     NegInt(u64),
     Float(f64),
-    String(~str),
+    String(String),
     Datetime(u16,u8,u8,u8,u8,u8),
     Array(Vec<Value>),
     TableArray(Vec<Value>),
-    Table(bool, Box<HashMap<~str, Value>>) // bool=true iff section already defiend
+
+    // TableInner is used to create inner nodes for which no toml [section]
+    // exists. For example in case of [a.b.c], `a` and `b` would be TableInner
+    // while `c` would be a Table.
+    TableInner(Box<HashMap<String, Value>>),
+    Table(Box<HashMap<String, Value>>)
 }
 
 impl fmt::Show for Value {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            NoValue       => write!(fmt.buf, "NoValue"),
-            Boolean(b)    => write!(fmt.buf, "Boolean({:b})", b),
-            PosInt(n)     => write!(fmt.buf, "PosInt({:u})", n),
-            NegInt(n)     => write!(fmt.buf, "NegInt({:u})", n),
-            Float(f)      => write!(fmt.buf, "Float({:f})", f),
-            String(ref s) => write!(fmt.buf, "String({:s})", s.as_slice()),
+            NoValue       => write!(fmt, "NoValue"),
+            Boolean(b)    => write!(fmt, "Boolean({:b})", b),
+            PosInt(n)     => write!(fmt, "PosInt({:u})", n),
+            NegInt(n)     => write!(fmt, "NegInt({:u})", n),
+            Float(f)      => write!(fmt, "Float({:f})", f),
+            String(ref s) => write!(fmt, "String({:s})", s.as_slice()),
             Datetime(a,b,c,d,e,f) =>  {
-                write!(fmt.buf, "Datetime({},{},{},{},{},{})", a,b,c,d,e,f)
+                write!(fmt, "Datetime({},{},{},{},{},{})", a,b,c,d,e,f)
             }
-            Array(ref arr) => write!(fmt.buf, "Array({})", arr.as_slice()),
-            TableArray(ref arr) => write!(fmt.buf, "TableArray({})", arr.as_slice()),
-            Table(_, ref hm) => write!(fmt.buf, "Table({})", **hm)
+            Array(ref arr) => write!(fmt, "Array({})", arr.as_slice()),
+            TableArray(ref arr) => write!(fmt, "TableArray({})", arr.as_slice()),
+            TableInner(ref hm) => write!(fmt, "TableInner({})", **hm),
+            Table(ref hm) => write!(fmt, "Table({})", **hm)
         }
     }
 }
@@ -64,12 +70,12 @@ impl fmt::Show for Value {
 
 
 /// Possible errors returned from the parse functions
-#[deriving(Show,Clone,Eq)]
+#[deriving(Show,Clone,PartialEq)]
 pub enum Error {
     /// A parser error occurred during parsing
     ParseError,
     /// A parser error with some human-readable context
-    ParseErrorInField(~str),
+    ParseErrorInField(String),
     /// An I/O error occurred during parsing
     IOError(IoError)
 }
@@ -118,10 +124,8 @@ impl<'a> LookupValue<'a> for uint {
 impl<'a, 'b> LookupValue<'a> for &'b str {
     fn lookup_in(&self, value: &'a Value) -> Option<&'a Value> {
         match value {
-            &Table(_, ref map) => {
-                map.find_equiv(self)
-            }
-            _ => { None }
+            &Table(ref map) | &TableInner(ref map) => map.find_equiv(self),
+            _ => None
         }
     }
 }
@@ -167,7 +171,7 @@ impl Value {
         }
     }
 
-    pub fn get_str<'a>(&'a self) -> Option<&'a ~str> {
+    pub fn get_str<'a>(&'a self) -> Option<&'a String> {
         match self {
             &String(ref str) => { Some(str) }
             _ => { None }
@@ -181,10 +185,10 @@ impl Value {
         }
     }
 
-    pub fn get_table<'a>(&'a self) -> Option<&'a Box<HashMap<~str, Value>>> {
+    pub fn get_table<'a>(&'a self) -> Option<&'a Box<HashMap<String, Value>>> {
         match self {
-            &Table(_, ref table) => { Some(table) }
-            _ => { None }
+            &Table(ref table) | &TableInner(ref table) => Some(table),
+            _ => None
         }
     }
 
@@ -229,77 +233,71 @@ impl Value {
 }
 
 trait Visitor {
-    fn section(&mut self, name: ~str, is_array: bool) -> bool;
-    fn pair(&mut self, key: ~str, val: Value) -> bool;
+    fn section(&mut self, name: String, is_array: bool) -> bool;
+    fn pair(&mut self, key: String, val: Value) -> bool;
 }
 
 struct ValueBuilder<'a> {
-    root: &'a mut Box<HashMap<~str, Value>>,
-    current_path: Vec<~str>
+    root: &'a mut Box<HashMap<String, Value>>,
+    current_path: Vec<String>
 }
-
+  
 impl<'a> ValueBuilder<'a> {
-    fn new(root: &'a mut Box<HashMap<~str, Value>>) -> ValueBuilder<'a> {
+    fn new(root: &'a mut Box<HashMap<String, Value>>) -> ValueBuilder<'a> {
         ValueBuilder { root: root, current_path: vec!() }
     }
 
-    fn recursive_create_tree(path: &[~str], ht: &mut Box<HashMap<~str, Value>>, is_array: bool) -> bool {
-        assert!(path.len() > 0);
+    fn recursive_create_tree_terminal(key: &String, ht: &mut Box<HashMap<String, Value>>, is_array: bool) -> bool {
+        match ht.find_mut(key) {
+            Some(node) => {
+                match node {
+                    &TableArray(ref mut table_array) => {
+                        assert!(table_array.len() > 0);
 
-        if path.head().unwrap().is_empty() { return false } // don't allow empty keys
-
-        let term_rec: bool = path.len() == 1;
-
-        let head = path.head().unwrap(); // TODO: optimize
-
-        match ht.find_mut(head) {
-            Some(&TableArray(ref mut table_array)) => {
-                assert!(table_array.len() > 0);
-
-                if term_rec { // terminal recursion
-                    if is_array {
-                        table_array.push(Table(true, box HashMap::new()));
-                        return true;
-                    }
-                    else {
-                        debug!("Duplicate key");
-                        return false;
-                    }
-                }
-                else {
-                    //let last_table = &mut ;
-                    match table_array.mut_last().unwrap() {
-                        &Table(_, ref mut hmap) => {
-                            return ValueBuilder::recursive_create_tree(path.tail(), hmap, is_array);
+                        if is_array {
+                            table_array.push(Table(box HashMap::new()));
+                            return true;
                         }
-                        _ => {
-                            // TableArray's only contain Table's
-                            unreachable!();
-                        }
-                    }
-                }
-            }
-            Some(&Table(already_created, ref mut table)) => {
-                if term_rec { // terminal recursion
-                    if is_array {
-                        debug!("Duplicate key");
-                        return false;
-                    }
-                    else {
-                        if already_created {
-                            debug!("Duplicate section");
+                        else {
+                            debug!("Duplicate key");
                             return false;
                         }
-                        return true;
+                    }
+                    &Table(_) => {
+                        // this happens for example here:
+                        //
+                        //     [a.b]
+                        //     [a.b]
+                        //
+                        // or:
+                        //
+                        //     [a.b]
+                        //     [[a.b]]
+                        debug!("Duplicate section");
+                        return false;
+                    }
+                    node @ &TableInner(_) => {
+                        if is_array {
+                            debug!("Duplicate key");
+                            return false;
+                        }
+                        else {
+                            // [a.b.c]
+                            // [a.b]
+                            use std::mem::replace;
+                            let hasht = match replace(node, NoValue) {
+                              TableInner(inner) => inner,
+                              _ => unreachable!()
+                            };
+                            replace(node, Table(hasht));
+                            return true;
+                        }
+                    }
+                    _ => {
+                        debug!("Wrong type/duplicate key");
+                        return false;
                     }
                 }
-                else {
-                    return ValueBuilder::recursive_create_tree(path.tail(), table, is_array);
-                }
-            }
-            Some(_) => {
-                debug!("Wrong type/duplicate key");
-                return false;
             }
             None => {
                 // fall-through, as we cannot modify 'ht' here
@@ -307,39 +305,81 @@ impl<'a> ValueBuilder<'a> {
         }
 
         let value =
-        if term_rec { // terminal recursion
-            if is_array { TableArray(vec!(Table(false, box HashMap::new()))) }
-            else { Table(true, box HashMap::new()) }
-        }
-        else {
-            let mut table = box HashMap::new();
-            let ok = ValueBuilder::recursive_create_tree(path.tail(), &mut table, is_array);
-            if !ok { return false }
-            Table(false, table)
-        };
-        let ok = ht.insert(head.to_owned(), value);
+            if is_array { TableArray(vec!(TableInner(box HashMap::new()))) }
+            else { Table(box HashMap::new()) };
+        let ok = ht.insert(key.to_str(), value);
         assert!(ok);
         return ok;
     }
 
-    fn insert_value(path: &[~str], key: &str, ht: &mut Box<HashMap<~str, Value>>, val: Value) -> bool {
+    fn recursive_create_tree(path: &[String], ht: &mut Box<HashMap<String, Value>>, is_array: bool) -> bool {
+        assert!(path.len() > 0);
+
+        if path.head().unwrap().is_empty() { return false } // don't allow empty keys
+
+        let head = path.head().unwrap(); // TODO: optimize
+
+        if path.len() == 1 {
+            // terminal recursion
+            return ValueBuilder::recursive_create_tree_terminal(head, ht, is_array);
+        }
+
+        match ht.find_mut(head) {
+            Some(node) => {
+                match node {
+                    &TableArray(ref mut table_array) => {
+                        assert!(table_array.len() > 0);
+
+                        match table_array.mut_last() {
+                           Some(&Table(ref mut hmap)) | Some(&TableInner(ref mut hmap)) => {
+                                return ValueBuilder::recursive_create_tree(path.tail(), hmap, is_array);
+                            }
+                            _ => {
+                                // TableArray's only contain Table's and must be non-empty
+                                unreachable!();
+                            }
+                        }
+                    }
+                    &Table(ref mut table) | &TableInner(ref mut table) => {
+                        return ValueBuilder::recursive_create_tree(path.tail(), table, is_array);
+                    }
+                    _ => {
+                        debug!("Wrong type/duplicate key");
+                        return false;
+                    }
+                }
+            }
+            None => {
+                // fall-through, as we cannot modify 'ht' here
+            }
+        }
+
+        let mut table = box HashMap::new();
+        let ok = ValueBuilder::recursive_create_tree(path.tail(), &mut table, is_array);
+        if !ok { return false }
+        let ok = ht.insert(head.to_str(), TableInner(table));
+        assert!(ok);
+        return ok;
+    }
+
+    fn insert_value(path: &[String], key: &str, ht: &mut Box<HashMap<String, Value>>, val: Value) -> bool {
         if path.is_empty() {
-            return ht.insert(key.to_owned(), val);
+            return ht.insert(key.to_str(), val);
         }
         else {
             let head = path.head().unwrap(); // TODO: optimize
             match ht.find_mut(head) {
-                Some(&Table(_, ref mut table)) => {
+                Some(&Table(ref mut table)) | Some(&TableInner(ref mut table)) => {
                     return ValueBuilder::insert_value(path.tail(), key, table, val);
                 }
                 Some(&TableArray(ref mut table_array)) => {
                     assert!(table_array.len() > 0);
-                    match table_array.mut_last().unwrap() {
-                        &Table(_, ref mut hmap) => {
+                    match table_array.mut_last() {
+                        Some(&Table(ref mut hmap)) | Some(&TableInner(ref mut hmap)) => {
                             return ValueBuilder::insert_value(path.tail(), key, hmap, val);
                         }
                         _ => {
-                            // TableArray's only contain Table's
+                            // TableArray's only contain Table's and must be non-empty
                             unreachable!();
                         }
                     }
@@ -354,8 +394,8 @@ impl<'a> ValueBuilder<'a> {
 }
 
 impl<'a> Visitor for ValueBuilder<'a> {
-    fn section(&mut self, name: ~str, is_array: bool) -> bool {
-        self.current_path = name.split_str(".").map(|i| i.to_owned()).collect();
+    fn section(&mut self, name: String, is_array: bool) -> bool {
+        self.current_path = name.as_slice().split('.').map(|i| i.to_str()).collect();
 
         let ok = ValueBuilder::recursive_create_tree(self.current_path.as_slice(), self.root, is_array);
         if !ok {
@@ -364,10 +404,10 @@ impl<'a> Visitor for ValueBuilder<'a> {
         return ok;
     }
 
-    fn pair(&mut self, key: ~str, val: Value) -> bool {
-        let ok = ValueBuilder::insert_value(self.current_path.as_slice(), key, self.root, val);
+    fn pair(&mut self, key: String, val: Value) -> bool {
+        let ok = ValueBuilder::insert_value(self.current_path.as_slice(), key.as_slice(), self.root, val);
         if !ok {
-            debug!("Duplicate key: {} in path {:?}", key, self.current_path);
+            debug!("Duplicate key: {} in path {}", key, self.current_path);
         }
         return ok;
     }
@@ -623,7 +663,7 @@ impl<'a, BUF: Buffer> Parser<'a, BUF> {
                         }
                         val => {
                             if !arr.is_empty() {
-                                if !have_equiv_types(arr.as_slice().head().unwrap(), &val) {
+                                if !have_equiv_types(arr.get(0), &val) {
                                     debug!("Incompatible element types in array");
                                     return NoValue;
                                 }
@@ -652,10 +692,10 @@ impl<'a, BUF: Buffer> Parser<'a, BUF> {
         }
     }
 
-    fn parse_string(&mut self) -> Option<~str> {
+    fn parse_string(&mut self) -> Option<String> {
         if !self.advance_if('"') { return None }
 
-        let mut str = StrBuf::new();
+        let mut str = String::new();
         loop {
             if self.ch().is_none() { return None }
             match self.ch().unwrap() {
@@ -699,7 +739,7 @@ impl<'a, BUF: Buffer> Parser<'a, BUF> {
                 }
                 '"' => {
                     self.advance();
-                    return Some(str.into_owned());
+                    return Some(str);
                 }
                 c => {
                     str.push_char(c);
@@ -709,8 +749,8 @@ impl<'a, BUF: Buffer> Parser<'a, BUF> {
         }
     }
 
-    fn read_token(&mut self, f: |char| -> bool) -> ~str {
-        let mut token = StrBuf::new();
+    fn read_token(&mut self, f: |char| -> bool) -> String {
+        let mut token = String::new();
         loop {
             match self.ch() {
                 Some(ch) => {
@@ -722,10 +762,10 @@ impl<'a, BUF: Buffer> Parser<'a, BUF> {
             self.advance();
         }
 
-        return token.into_owned();
+        return token;
     }
 
-    fn parse_section_identifier(&mut self) -> ~str {
+    fn parse_section_identifier(&mut self) -> String {
         self.read_token(|ch| {
             match ch {
                 '\t' | '\n' | '\r' | '[' | ']' => false,
@@ -855,7 +895,7 @@ pub fn parse_from_file(name: &str) -> Result<Value,Error> {
 }
 
 pub fn parse_from_buffer<BUF: Buffer>(rd: &mut BUF) -> Result<Value,Error> {
-    let mut ht = box HashMap::<~str, Value>::new();
+    let mut ht = box HashMap::<String, Value>::new();
     {
         let mut builder = ValueBuilder::new(&mut ht);
         let mut parser = Parser::new(rd);
@@ -868,7 +908,7 @@ pub fn parse_from_buffer<BUF: Buffer>(rd: &mut BUF) -> Result<Value,Error> {
             Ok(_) => ()
         }
     }
-    return Ok(Table(false, ht));
+    return Ok(TableInner(ht));
 }
 
 pub fn parse_from_bytes(bytes: &[u8]) -> Result<Value,Error> {
@@ -879,14 +919,14 @@ pub fn parse_from_bytes(bytes: &[u8]) -> Result<Value,Error> {
 enum State {
     No,
     Arr(MoveItems<Value>),
-    Tab(Box<HashMap<~str, Value>>),
-    Map(MoveEntries<~str, Value>)
+    Tab(Box<HashMap<String, Value>>),
+    Map(MoveEntries<String, Value>)
 }
 
 pub struct Decoder {
     value: Value,
     state: State,
-    field: Option<~str>
+    field: Option<String>
 }
 
 impl Decoder {
@@ -947,12 +987,12 @@ impl serialize::Decoder<Error> for Decoder {
     fn read_char(&mut self) -> DecodeResult<char> {
         let s = try!(self.read_str());
         if s.len() != 1 { return Err(ParseError); }
-        Ok(s[0] as char)
+        Ok(s.as_slice()[0] as char)
     }
 
-    fn read_str(&mut self) -> DecodeResult<~str> {
+    fn read_str(&mut self) -> DecodeResult<String> {
         match mem::replace(&mut self.value, NoValue) {
-            String(s) => Ok(s),
+            String(s) => Ok(s.to_str()),
             _ => Err(ParseError)
         }
     }
@@ -983,7 +1023,7 @@ impl serialize::Decoder<Error> for Decoder {
 
     fn read_struct<T>(&mut self, _name: &str, _len: uint, f: |&mut Decoder| -> DecodeResult<T>) -> DecodeResult<T> {
         match mem::replace(&mut self.value, NoValue) {
-            Table(_, hm) => {
+            Table(hm) | TableInner(hm) => {
                 f(&mut Decoder::new_state(Tab(hm)))
             }
             _ => Err(ParseError)
@@ -994,7 +1034,7 @@ impl serialize::Decoder<Error> for Decoder {
         // XXX: assert!(self.value == NoValue);
         let res = match self.state {
             Tab(ref mut tab) => {
-                match tab.pop(&name.to_owned()) { // XXX: pop_equiv(...) or find_equiv_mut...
+                match tab.pop(&name.to_str()) { // XXX: pop_equiv(...) or find_equiv_mut...
                     None => f(&mut Decoder::new(NoValue)), // XXX: NoValue means "nil" here
                     Some(val) => f(&mut Decoder::new(val))
                 }
@@ -1004,7 +1044,7 @@ impl serialize::Decoder<Error> for Decoder {
 
         match res {
             Ok(val) => Ok(val),
-            Err(ParseError) => Err(ParseErrorInField(name.to_owned())),
+            Err(ParseError) => Err(ParseErrorInField(name.to_str())),
             Err(e) => Err(e)
         }
     }
@@ -1018,7 +1058,7 @@ impl serialize::Decoder<Error> for Decoder {
 
     fn read_map<T>(&mut self, f: |&mut Decoder, uint| -> DecodeResult<T>) -> DecodeResult<T> {
         match mem::replace(&mut self.value, NoValue) {
-            Table(_, hm) => {
+            Table(hm) | TableInner(hm) => {
                 let len = hm.len();
                 f(&mut Decoder::new_state(Map(hm.move_iter())), len)
             }

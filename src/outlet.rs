@@ -1,14 +1,15 @@
 extern crate collections;
+extern crate debug;
 extern crate oblw;
 extern crate toml;
 extern crate libc;
 
 use collections::bitv;
-use std::strbuf;
+use std::string;
 
 pub fn getCode(x: ~str) -> bitv::Bitv {
 	let root = toml::parse_from_file("outlets.toml").unwrap();
-	let mut q = strbuf::StrBuf::from_str("db.");
+	let mut q = string::String::from_str("db.");
 	q.push_str(x);
 	let data = root.lookup(q.as_slice());
 	match data {
