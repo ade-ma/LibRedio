@@ -49,7 +49,7 @@ pub fn convolve<T: Num+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
 //	fc, f32, decimal ratio of corner to sampling freqs
 
 pub fn window(m: uint) -> Vec<f32> {
-	let N = m as f32;
+	let n = m as f32;
 	let pi = f32::consts::PI;
 	// blackman-nuttall coefficients
 	let a: ~[f32] = ~[0.3635819, 0.4891775, 0.1365995, 0.0106411];

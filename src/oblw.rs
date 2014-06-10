@@ -13,14 +13,14 @@ pub struct Run {
 	pub ct: uint
 }
 
-pub fn rld(In: Vec<Run>) -> Vec<uint> {
-	let mut Out: Vec<uint> = vec!();
+pub fn rld(in: Vec<Run>) -> Vec<uint> {
+	let mut out: Vec<uint> = vec!();
 	for i in In.iter() {
 		for a in range(0u, i.ct.clone()) {
-			Out.push(i.v.clone());
+			out.push(i.v.clone());
 		}
 	};
-	return Out
+	return out
 }
 
 pub fn B2b(bytes: &[u8]) -> bitv::Bitv {
