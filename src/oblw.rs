@@ -68,7 +68,6 @@ pub fn spawnBytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm::
 	};
 
 	native::task::spawn(proc() {
-		// 0x02 =
 		ho.write_stream(0x02, libusb::LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |buf| {
 			let y = buf.unwrap();
 			match pDataI.try_recv() {
