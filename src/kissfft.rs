@@ -10,7 +10,7 @@ use std::comm;
 
 #[link(name= "kissfft")]
 extern "C" {
-	fn kiss_fft_alloc(nfft: u32, inverse_fft: u32, mem: *u8, lenmem: *uint) -> *u8;
+	fn kiss_fft_alloc(nfft: u32, inverse_fft: u32, mem: *u8, lenmem: *u64) -> *u8;
 	fn kiss_fft(cfg: *u8, fin: *complex::Complex<f32>, mut fout: *mut complex::Complex<f32>);
 	fn kiss_fft_cleanup();
 }
