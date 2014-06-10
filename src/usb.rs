@@ -1,4 +1,6 @@
-#![feature(globs)];
+#![feature(globs)]
+#![allow(non_camel_case_types)]
+
 extern crate libc;
 extern crate native;
 extern crate libusb;
@@ -100,7 +102,7 @@ impl Context {
 					let ctx = (*tbx.get()).ctx;
 					let count = &(*tbx.get()).open_device_count;
 
-					while (count.load(SeqCst) > 0) {
+					while count.load(SeqCst) > 0 {
 						libusb_handle_events(ctx);
 					}
 				}
@@ -375,7 +377,7 @@ impl DeviceHandle {
 				libusb_submit_transfer(th.t);
 			}
 
-			while (num_transfers > 0) {
+			while num_transfers > 0 {
 				let transfer: *mut libusb_transfer = port.recv();
 
 				if (*transfer).get_status() == LIBUSB_TRANSFER_COMPLETED {
@@ -419,7 +421,7 @@ impl DeviceHandle {
 				}
 			}
 
-			while (running_transfers > 0) {
+			while running_transfers > 0 {
 				let transfer: *mut libusb_transfer = port.recv();
 
 				if (*transfer).get_status() == LIBUSB_TRANSFER_COMPLETED {
