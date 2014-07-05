@@ -10,13 +10,13 @@ use std::comm;
 
 #[link(name= "kissfft")]
 extern "C" {
-	fn kiss_fft_alloc(nfft: u32, inverse_fft: u32, mem: *u8, lenmem: *u64) -> *u8;
-	fn kiss_fft(cfg: *u8, fin: *complex::Complex<f32>, mut fout: *mut complex::Complex<f32>);
+	fn kiss_fft_alloc(nfft: u32, inverse_fft: u32, mem: *mut u8, lenmem: *mut u64) -> *const u8;
+	fn kiss_fft(cfg: *const u8, fin: *const complex::Complex<f32>, mut fout: *mut complex::Complex<f32>);
 	fn kiss_fft_cleanup();
 }
 
 pub fn fft(pin: comm::Receiver<Vec<complex::Complex<f32>>>, cout: comm::Sender<Vec<complex::Complex<f32>>>, blockSize: u32, inv: u32) {
-	let kiss_fft_cfg = unsafe {kiss_fft_alloc(blockSize, inv, ptr::null(), ptr::null())};
+	let kiss_fft_cfg = unsafe {kiss_fft_alloc(blockSize, inv, ptr::mut_null(), ptr::mut_null())};
 	loop {
 		let mut fout: Vec<complex::Complex<f32>> = vec::Vec::with_capacity(blockSize as uint);
 		unsafe {fout.set_len(blockSize as uint)}

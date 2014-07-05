@@ -164,7 +164,7 @@ pub fn vec<T: Clone>(u: &[T]) -> Vec<T> {
 	vec::Vec::from_slice(u)
 }
 
-pub fn fork<T: Clone+Send>(u: Receiver<T>, v: ~[Sender<T>]) {
+pub fn fork<T: Clone+Send>(u: Receiver<T>, v: &[Sender<T>]) {
 	loop {
 		let x = u.recv();
 		for y in v.iter() {
@@ -185,19 +185,19 @@ pub fn mulVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>)
 	}
 }
 
-pub fn sumAcross<T: Float+Send>(u: ~[Receiver<T>], v: Sender<T>, c: T) {
+pub fn sumAcross<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b+a))
 	}
 }
 
-pub fn mulAcross<T: Float+Send>(u: ~[Receiver<T>], v: Sender<T>, c: T) {
+pub fn mulAcross<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b*a))
 	}
 }
 
-pub fn sumAcrossVecs<T: Float+Send>(u: ~[Receiver<Vec<T>>], v: Sender<Vec<T>>, c: Vec<T>) {
+pub fn sumAcrossVecs<T: Float+Send>(u: &[Receiver<Vec<T>>], v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c.clone(), |b, a| a.iter().zip(b.iter()).map(|(&d, &e)| d+e).collect()))
 	}
@@ -215,7 +215,7 @@ pub fn sum<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T){
 	}
 }
 
-pub fn grapes<T: Send>(u: ~[Receiver<T>], v: Sender<T>) {
+pub fn grapes<T: Send>(u: &[Receiver<T>], v: Sender<T>) {
 	let mut timer = std::io::Timer::new().unwrap();
 	loop {
 		for x in u.iter() {
@@ -228,14 +228,14 @@ pub fn grapes<T: Send>(u: ~[Receiver<T>], v: Sender<T>) {
 	}
 }
 
-pub fn delay<T: Send+Clone>(u: Receiver<T>, v: Sender<T>, c: T) {
+pub fn delay<T: Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	v.send(c);
 	loop {
 		v.send(u.recv());
 	}
 }
 
-pub fn delayVecs<T: Send+Clone>(u: Receiver<T>, v: Sender<T>, c: T) {
+pub fn delayVecs<T: Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	delay(u, v, c);
 }
 
@@ -264,7 +264,7 @@ pub fn shaperVecs<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 	}
 }
 
-pub fn binconv(u: Receiver<Vec<uint>>, v: Sender<Vec<uint>>, l: ~[uint]) {
+pub fn binconv(u: Receiver<Vec<uint>>, v: Sender<Vec<uint>>, l: &[uint]) {
 	loop {
 		v.send(eat(u.recv().slice_from(0), l.clone()))
 	}

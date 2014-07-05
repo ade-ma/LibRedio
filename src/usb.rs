@@ -309,7 +309,7 @@ impl DeviceHandle {
 	}
 
 	pub fn ctrl_read(&self, bmRequestType: u8, bRequest: u8,
-		wValue:u16, wIndex: u16, length: uint) -> Result<~[u8], libusb_transfer_status> {
+		wValue:u16, wIndex: u16, length: uint) -> Result<Vec<u8>, libusb_transfer_status> {
 
 		let setup_length = size_of::<libusb_control_setup>();
 		let total_length = setup_length + length as uint;
@@ -381,7 +381,7 @@ impl DeviceHandle {
 				let transfer: *mut libusb_transfer = port.recv();
 
 				if (*transfer).get_status() == LIBUSB_TRANSFER_COMPLETED {
-					slice::raw::buf_as_slice((*transfer).buffer as *u8, size, |b| {
+					slice::raw::buf_as_slice((*transfer).buffer as *const u8, size, |b| {
 						running &= cb(Ok(b))
 					});
 				} else {
@@ -405,7 +405,7 @@ impl DeviceHandle {
 
 		unsafe {
 			let mut running = true;
-			let mut running_transfers = 0;
+			let mut running_transfers: int = 0;
 			let (port, transfers) = self.stream_transfers(
 				endpoint, transfer_type, size, num_transfers);
 

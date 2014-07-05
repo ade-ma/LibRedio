@@ -92,7 +92,7 @@ pub fn vidSink(pDataC: comm::Receiver<f32>, size: uint) {
 	}
 	sdl2::quit();
 }
-pub fn manyVidSink(u: ~[comm::Receiver<Vec<f32>>]) {
+pub fn manyVidSink(u: Vec<comm::Receiver<Vec<f32>>>) {
 	sdl2::init(sdl2::InitVideo);
 	let l = u.len() as int;
 	for x in u.move_iter() {

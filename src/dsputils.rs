@@ -52,14 +52,14 @@ pub fn window(m: uint) -> Vec<f32> {
 	let n = m as f32;
 	let pi = f32::consts::PI;
 	// blackman-nuttall coefficients
-	let a: ~[f32] = ~[0.3635819, 0.4891775, 0.1365995, 0.0106411];
+	let a: Vec<f32> = vec!(0.3635819, 0.4891775, 0.1365995, 0.0106411);
 	// blackman-harris window coefficients
 	// let a: ~[f32] = ~[0.35875, 0.48829, 0.14128, 0.01168];
 	// hamming window coefficients
 	// let a: ~[f32] = ~[0.54, 0.46, 0.0, 0.0];
 	range(0, m + 1).map(|x| {
-		let n = x as f32;
-		a[0] - a[1]*(2f32*pi*n/(N-1f32)).cos()+a[2]*(4f32*pi*n/(N-1f32)).cos()-a[3]*(6f32*pi*n/(N-1f32).cos())
+		let N = x as f32;
+		a.get(0) - a.get(1)*(2f32*pi*n/(N-1f32)).cos()+a.get(2)*(4f32*pi*n/(N-1f32)).cos()-a.get(3)*(6f32*pi*n/(N-1f32).cos())
 	}).collect()
 }
 

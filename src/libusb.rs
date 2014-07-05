@@ -20,7 +20,7 @@ extern{
 
 	pub fn libusb_ref_device(dev: *mut libusb_device) -> *mut libusb_device;
 	pub fn libusb_unref_device(dev: *mut libusb_device);
-	pub fn libusb_get_configuration(dev: *mut libusb_device_handle, config: *c_int) -> c_int;
+	pub fn libusb_get_configuration(dev: *mut libusb_device_handle, config: *mut c_int) -> c_int;
 	pub fn libusb_get_device_descriptor(dev: *mut libusb_device, desc: *mut libusb_device_descriptor) -> c_int;
 	pub fn libusb_get_active_config_descriptor(dev: *mut libusb_device, config: *mut *mut libusb_config_descriptor) -> c_int;
 	pub fn libusb_get_config_descriptor(dev: *mut libusb_device, config_index: uint8_t, config: *mut *mut libusb_config_descriptor) -> c_int;
@@ -281,7 +281,7 @@ pub struct libusb_endpoint_descriptor {
 
 	/** Extra descriptors. If libusbx encounters unknown endpodescriptors: c_int,
 	 * it will store them here, should you wish to parse them. */
-	pub extra: *uint8_t,
+	pub extra: *const uint8_t,
 
 	/** Length of the extra descriptors, in bytes. */
 	pub extra_length: int,
@@ -327,11 +327,11 @@ pub struct libusb_interface_descriptor {
 
 	/** Array of endpodescriptors: c_int. This length of this array is determined
 	 * by the bNumEndpoints field. */
-	pub endpoint: *libusb_endpoint_descriptor,
+	pub endpoint: *const libusb_endpoint_descriptor,
 
 	/** Extra descriptors. If libusbx encounters unknown interface descriptors,
 	 * it will store them here, should you wish to parse them. */
-	pub extra: *uint8_t,
+	pub extra: *const uint8_t,
 
 	/** Length of the extra descriptors, in bytes. */
 	pub extra_length: c_int,
@@ -385,11 +385,11 @@ pub struct libusb_config_descriptor {
 
 	/** Array of interfaces supported by this configuration. The length of
 	 * this array is determined by the bNumInterfaces field. */
-	pub interface: *libusb_interface,
+	pub interface: *const libusb_interface,
 
 	/** Extra descriptors. If libusbx encounters unknown configuration
 	 * descriptors, it will store them here, should you wish to parse them. */
-	pub extra: *uint8_t,
+	pub extra: *const uint8_t,
 
 	/** Length of the extra descriptors, in bytes. */
 	pub extra_length: int,
