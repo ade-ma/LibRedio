@@ -1,10 +1,8 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
 
-extern crate native;
 extern crate dsputils;
 
-use native::task::spawn;
 use std::comm::{Sender, Receiver, Select, Handle, Messages};
 
 use std::iter::AdditiveIterator;
@@ -12,8 +10,6 @@ use std::iter::AdditiveIterator;
 use std::vec;
 
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
-use std::io::net::udp::UdpSocket;
-use std::io::net::unix::UnixListener;
 use std::io::{Listener, Acceptor};
 
 // run length encoding
@@ -32,19 +28,19 @@ pub fn rle<T: Eq+Clone+Send>(u: Receiver<T>, v: Sender<(T, uint)>) {
 }
 
 // accept input infinite sequence of runs, convert counts to duration by dividing by sample rate
-pub fn dle<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<(T, f32)>, sRate: uint) {
+pub fn dle<T: Eq+Clone+Send>(u: Receiver<(T, uint)>, v: Sender<(T, f32)>, s_rate: uint) {
 	loop {
 		match u.recv() {
-			(x, ct) => v.send( ( x, ct as f32 / sRate as f32) ),
+			(x, ct) => v.send( ( x, ct as f32 / s_rate as f32) ),
 		}
 	}
 }
 
 // duration length decoding
-pub fn dld<T: Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, sRate: f32) {
+pub fn dld<T: Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, s_rate: f32) {
 	loop {
 		match u.recv() {
-			(x, dur) => for _ in range(0, (dur*sRate) as uint) {v.send(x.clone())}
+			(x, dur) => for _ in range(0, (dur*s_rate) as uint) {v.send(x.clone())}
 		}
 	}
 }
@@ -91,14 +87,14 @@ pub fn dxdt<T: Send+Clone+Num>(u: Receiver<T>, v: Sender<T>) {
 
 pub fn unpacketizer<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 	loop {
-		for x in u.recv().move_iter() {
+		for x in u.recv().into_iter() {
 			v.send(x)
 		}
 	}
 }
 
 
-pub fn printSink<T: std::fmt::Show+Send>(u: Receiver<T>) {
+pub fn print_sink<T: std::fmt::Show+Send>(u: Receiver<T>) {
 	loop {
 		println!("{}", u.recv())
 	}
@@ -123,13 +119,13 @@ pub fn applicator<T: Clone+Send>(u: Receiver<T>, v: Sender<T>, f: |T|->T) {
 	}
 }
 
-pub fn applicatorVecs<T: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, f: |&T|->T) {
+pub fn applicator_vecs<T: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, f: |&T|->T) {
 	loop {
 		v.send(u.recv().iter().map(|x|f(x)).collect())
 	}
 }
 
-pub fn softSource<T: Send+Clone>(v: Sender<T>, f: |x: Sender<T>|) {
+pub fn soft_source<T: Send+Clone>(v: Sender<T>, f: |x: Sender<T>|) {
 	f(v.clone());
 	let (s,r) = channel::<()>();
 	r.recv();
@@ -139,7 +135,7 @@ pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: |x:
 	f(u.iter(), v)
 }
 
-pub fn looperOptional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<T>){
+pub fn looper_optional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<T>){
 	loop {
 		match u.recv() {
 			Some(d) => v.send(d),
@@ -148,20 +144,20 @@ pub fn looperOptional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<T>){
 	}
 }
 
-pub fn crossApplicator<T: Clone+Send, U: Clone+Send>(u: Receiver<T>, v: Sender<U>, f: |T|->U) {
+pub fn cross_applicator<T: Clone+Send, U: Clone+Send>(u: Receiver<T>, v: Sender<U>, f: |T|->U) {
 	loop {
 		v.send(f(u.recv()))
 	}
 }
 
-pub fn crossApplicatorVecs<T: Clone+Send, U: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<U>>, f: |&T|->U) {
+pub fn cross_applicator_vecs<T: Clone+Send, U: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<U>>, f: |&T|->U) {
 	loop {
 		v.send(u.recv().iter().map(|x|f(x)).collect())
 	}
 }
 
 pub fn vec<T: Clone>(u: &[T]) -> Vec<T> {
-	vec::Vec::from_slice(u)
+	u.to_vec()
 }
 
 pub fn fork<T: Clone+Send>(u: Receiver<T>, v: &[Sender<T>]) {
@@ -179,31 +175,31 @@ pub fn mul<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	}
 }
 
-pub fn mulVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
+pub fn mul_vecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.recv().iter().zip(c.iter()).map(|(&x, &y)| x*y).collect())
 	}
 }
 
-pub fn sumAcross<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
+pub fn sum_across<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b+a))
 	}
 }
 
-pub fn mulAcross<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
+pub fn mul_across<T: Float+Send>(u: &[Receiver<T>], v: Sender<T>, c: T) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c, |b, a| b*a))
 	}
 }
 
-pub fn sumAcrossVecs<T: Float+Send>(u: &[Receiver<Vec<T>>], v: Sender<Vec<T>>, c: Vec<T>) {
+pub fn sum_across_vecs<T: Float+Send>(u: &[Receiver<Vec<T>>], v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.iter().map(|y| y.recv()).fold(c.clone(), |b, a| a.iter().zip(b.iter()).map(|(&d, &e)| d+e).collect()))
 	}
 }
 
-pub fn sumVecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
+pub fn sum_vecs<T: Float+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, c: Vec<T>) {
 	loop {
 		v.send(u.recv().iter().zip(c.iter()).map(|(&x, &y)| x+y).collect())
 	}
@@ -223,7 +219,7 @@ pub fn grapes<T: Send>(u: &[Receiver<T>], v: Sender<T>) {
 				Ok(d) => v.send(d),
 				Err(_) => ()
 			}
-			timer.sleep(10);
+			timer.sleep(std::time::duration::Duration::nanoseconds(10));
 		}
 	}
 }
@@ -235,11 +231,11 @@ pub fn delay<T: Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	}
 }
 
-pub fn delayVecs<T: Send>(u: Receiver<T>, v: Sender<T>, c: T) {
+pub fn delay_vecs<T: Send>(u: Receiver<T>, v: Sender<T>, c: T) {
 	delay(u, v, c);
 }
 
-pub fn shaperOptional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<Vec<T>>, l: uint) {
+pub fn shaper_optional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<Vec<T>>, l: uint) {
 	let mut x = vec!();
 	loop {
 		match u.recv() {
@@ -256,9 +252,9 @@ pub fn shaper<T: Send+Clone>(u: Receiver<T>, v: Sender<Vec<T>>, l: uint) {
 	}
 }
 
-pub fn shaperVecs<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
+pub fn shaper_vecs<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 	for x in u.iter() {
-		for y in x.move_iter() {
+		for y in x.into_iter() {
 			v.send(y)
 		}
 	}
