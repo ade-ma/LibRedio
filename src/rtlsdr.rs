@@ -4,24 +4,21 @@
 extern crate num;
 extern crate native;
 extern crate libc;
-use num::complex;
 
+use num::complex;
 use native::task::spawn;
 use libc::{c_int, c_uint, c_void};
-use std::slice;
 use std::comm::{Sender, Receiver, channel};
 use std::ptr;
-use std::num;
 use std::vec;
 use std::string;
-use std::str;
 
 #[link(name= "rtlsdr")]
 
 extern "C" {
-	fn rtlsdr_open(dev: & *mut c_void, devIndex: u32) -> u32;
+	fn rtlsdr_open(dev: & *mut c_void, dev_index: u32) -> u32;
 	fn rtlsdr_get_device_count() -> u32;
-	fn rtlsdr_get_device_name(devIndex: u32) -> *const i8;
+	fn rtlsdr_get_device_name(dev_index: u32) -> *const u8;
 	fn rtlsdr_reset_buffer(dev: *mut c_void) -> c_int;
 	fn rtlsdr_set_center_freq(dev: *mut c_void, freq: u32) -> c_int;
 	fn rtlsdr_set_tuner_gain(dev: *mut c_void, gain: u32) -> c_int;
@@ -41,7 +38,7 @@ pub fn close(dev: *mut c_void){
 	}
 }
 
-pub fn setSampleRate(dev: *mut c_void, sps: u32) {
+pub fn set_sample_rate(dev: *mut c_void, sps: u32) {
 	unsafe {
 		let success = rtlsdr_set_sample_rate(dev, sps);
 		assert_eq!(success, 0);
@@ -49,53 +46,53 @@ pub fn setSampleRate(dev: *mut c_void, sps: u32) {
 	}
 }
 
-pub fn getDeviceCount() -> u32 {
+pub fn get_device_count() -> u32 {
 	unsafe {
 		let x: u32 = rtlsdr_get_device_count();
 		return x;
 	}
 }
 
-pub fn openDevice() -> *mut c_void {
+pub fn open_device() -> *mut c_void {
 	unsafe {
 		let mut i: u32 = 0;
-		let devStructPtr: *mut c_void = ptr::mut_null();
+		let dev_struct_ptr: *mut c_void = ptr::null_mut();
 		'tryDevices: loop {
-			let success = rtlsdr_open(&devStructPtr, i);
+			let success = rtlsdr_open(&dev_struct_ptr, i);
 			if success == 0 {
 				break 'tryDevices
 			}
-			if i > getDeviceCount() {
+			if i > get_device_count() {
 				fail!("no available devices");
 			}
 			i += 1;
 		}
-	return devStructPtr;
+	return dev_struct_ptr;
 	}
 }
 
-pub fn getDeviceName(devIndex: u32) -> string::String {
+pub fn get_device_name(dev_index: u32) -> string::String {
 	unsafe {
-		let deviceString: *const i8 = rtlsdr_get_device_name(devIndex);
-		return str::raw::from_c_str(deviceString);
+		let device_string: *const u8 = rtlsdr_get_device_name(dev_index);
+		return string::raw::from_buf(device_string);
 	}
 }
 
-pub fn clearBuffer(device: *mut c_void) {
+pub fn clear_buffer(device: *mut c_void) {
 	unsafe {
 		let success = rtlsdr_reset_buffer(device);
 		assert_eq!(success, 0);
 	}
 }
 
-pub fn setFrequency(device: *mut c_void, freq: u32) {
+pub fn set_frequency(device: *mut c_void, freq: u32) {
 	unsafe {
 		let success = rtlsdr_set_center_freq(device, freq);
 		assert_eq!(success, 0);
 	}
 }
 
-pub fn setGain(device: *mut c_void, v: u32) {
+pub fn set_gain(device: *mut c_void, v: u32) {
 	unsafe {
 		let success = rtlsdr_set_tuner_gain_mode(device, 1);
 		assert_eq!(success, 0);
@@ -104,7 +101,7 @@ pub fn setGain(device: *mut c_void, v: u32) {
 	}
 }
 
-pub fn setGainAuto(device: *mut c_void) {
+pub fn set_gain_auto(device: *mut c_void) {
 	unsafe {
 		let success = rtlsdr_set_tuner_gain_mode(device, 0);
 		assert_eq!(success, 0);
@@ -118,24 +115,24 @@ extern fn rtlsdr_callback(buf: *const u8, len: u32, chan: &Sender<Vec<u8>>) {
 	}
 }
 
-pub fn readAsync(dev: *mut c_void, blockSize: u32) -> Receiver<Vec<u8>> {
+pub fn read_async(dev: *mut c_void, block_size: u32) -> Receiver<Vec<u8>> {
 	let (chan, port) = channel();
 	spawn(proc() {
 		unsafe{
-			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, blockSize*2);
+			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, block_size*2);
 		}
 	});
 	return port;
 }
 
-pub fn stopAsync(dev: *mut c_void) -> () {
+pub fn stop_async(dev: *mut c_void) -> () {
 	unsafe {
 		let success = rtlsdr_cancel_async(dev);
 		assert_eq!(success, 0);
 	}
 }
 
-pub fn readSync(dev: *mut c_void, ct: c_uint) -> Vec<u8> {
+pub fn read_sync(dev: *mut c_void, ct: c_uint) -> Vec<u8> {
 	unsafe {
 		let mut n_read: c_int = 0;
 		let mut buffer = vec::Vec::with_capacity(512);
@@ -147,6 +144,6 @@ pub fn readSync(dev: *mut c_void, ct: c_uint) -> Vec<u8> {
 }
 
 fn i2f(i: u8) -> f32 {i as f32/127.0 - 1.0}
-pub fn dataToSamples(data: Vec<u8>) -> Vec<complex::Complex<f32>> {
+pub fn data_to_samples(data: Vec<u8>) -> Vec<complex::Complex<f32>> {
 	data.slice_from(0).chunks(2).map(|i| complex::Complex{re:i2f(i[0]), im:i2f(i[1])}).collect()
 }
