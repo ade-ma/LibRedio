@@ -7,7 +7,7 @@ extern crate libc;
 use collections::bitv;
 use std::string;
 
-pub fn getCode(x: ~str) -> bitv::Bitv {
+pub fn get_code(x: string) -> bitv::Bitv {
 	let root = toml::parse_from_file("outlets.toml").unwrap();
 	let mut q = string::String::from_str("db.");
 	q.push_str(x);
