@@ -3,17 +3,13 @@
 
 extern crate num;
 
-use num::complex;
-
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
-use std::num;
 use std::iter::AdditiveIterator;
-use std::num::Zero;
 use std::f32;
 
 pub fn sum<T: Num+Primitive>(xs: &[T]) -> T {
-	let mut out: T = num::zero();
+	let mut out: T = std::num::zero();
 	if xs.len() != 0 {
 		for i in range(0, xs.len()) {
 			out = out + xs[i];
@@ -58,8 +54,8 @@ pub fn window(m: uint) -> Vec<f32> {
 	// hamming window coefficients
 	// let a: ~[f32] = ~[0.54, 0.46, 0.0, 0.0];
 	range(0, m + 1).map(|x| {
-		let N = x as f32;
-		a.get(0) - a.get(1)*(2f32*pi*n/(N-1f32)).cos()+a.get(2)*(4f32*pi*n/(N-1f32)).cos()-a.get(3)*(6f32*pi*n/(N-1f32).cos())
+		let nn = x as f32;
+		a[0] - a[1]*(2f32*pi*n/(nn-1f32)).cos()+a[2]*(4f32*pi*n/(nn-1f32)).cos()-a[3]*(6f32*pi*n/(nn-1f32).cos())
 	}).collect()
 }
 
