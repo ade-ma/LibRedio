@@ -7,14 +7,14 @@ use native::task::spawn;
 use std::comm::{Receiver, Sender, Select, Handle, channel};
 
 
-pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
+pub fn draw_vector_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
 	let px: uint = sw as uint;
-	let decimateFactor = (px as f32 - (0.5f32*(data.len() as f32/px as f32)) ) / data.len() as f32;
+	let decimate_factor = (px as f32 - (0.5f32*(data.len() as f32/px as f32)) ) / data.len() as f32;
 	data = data.iter().enumerate().filter_map(|(x, &y)|
-		if ((x as f32*decimateFactor) - (x as f32*decimateFactor).floor()) < decimateFactor { Some(y) } else { None }
+		if ((x as f32*decimate_factor) - (x as f32*decimate_factor).floor()) < decimate_factor { Some(y) } else { None }
 	 ).collect();
 	// black screen background
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 0, 0));
@@ -44,7 +44,7 @@ pub fn drawVectorAsBarPlot (renderer: &sdl2::render::Renderer<sdl2::video::Windo
 	renderer.fill_rects(rs.slice_from(0));
 }
 
-pub fn vidSinkVecs(pDataC: comm::Receiver<Vec<f32>>) {
+pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
 		Ok(window) => window,
 		Err(err) => fail!("")
@@ -61,7 +61,7 @@ pub fn vidSinkVecs(pDataC: comm::Receiver<Vec<f32>>) {
 		}
 		match pDataC.try_recv() {
 			Ok(d) => {
-				drawVectorAsBarPlot(&renderer, d);
+				draw_vector_as_barplot(&renderer, d);
 			}
 			_ => ()
 		}
@@ -69,7 +69,7 @@ pub fn vidSinkVecs(pDataC: comm::Receiver<Vec<f32>>) {
 	}
 	sdl2::quit();
 }
-pub fn vidSink(pDataC: comm::Receiver<f32>, size: uint) {
+pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
 		Ok(window) => window,
 		Err(err) => fail!("")
@@ -87,12 +87,12 @@ pub fn vidSink(pDataC: comm::Receiver<f32>, size: uint) {
 		}
 		data.pop();
 		data.unshift(pDataC.recv());
-		drawVectorAsBarPlot(&renderer, data.clone());
+		draw_vector_as_barplot(&renderer, data.clone());
 		renderer.present()
 	}
 	sdl2::quit();
 }
-pub fn manyVidSink(u: Vec<comm::Receiver<Vec<f32>>>) {
+pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
 	sdl2::init(sdl2::InitVideo);
 	let l = u.len() as int;
 	for x in u.move_iter() {
@@ -112,7 +112,7 @@ pub fn manyVidSink(u: Vec<comm::Receiver<Vec<f32>>>) {
 				_ => {}
 			};
 			match x.try_recv() {
-				Ok(d) => drawVectorAsBarPlot(&renderer, d),
+				Ok(d) => draw_vector_as_barplot(&renderer, d),
 				Err(_) => {}
 			};
 			renderer.present();

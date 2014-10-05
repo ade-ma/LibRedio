@@ -40,7 +40,7 @@ extern "C" {
 	fn pa_simple_get_latency(s: &PASimple, error: &mut c_int) -> u64;
 }
 
-pub fn pulseSource(cData: comm::Sender<Vec<f32>>, sRate: uint, bSize: uint) {
+pub fn pulse_source(cData: comm::Sender<Vec<f32>>, sRate: uint, bSize: uint) {
 	
 	let ss = PASampleSpec { format: 3, rate: sRate as u32, channels: 1 };
 	// pa_stream_direction_t -> enum, record = 2, playback = 1
@@ -58,7 +58,7 @@ pub fn pulseSource(cData: comm::Sender<Vec<f32>>, sRate: uint, bSize: uint) {
 		}
 }
 
-pub fn pulseSink(pData: Receiver<Vec<f32>>, sRate: uint) {
+pub fn pulse_sink(pData: Receiver<Vec<f32>>, sRate: uint) {
 	let ss = PASampleSpec { format: 5, rate: sRate as u32, channels: 1 };
 	let mut error: c_int = 0;
 	unsafe {
