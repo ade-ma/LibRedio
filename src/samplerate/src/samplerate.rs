@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate debug;
 
 use std::ptr;
 use std::vec;
@@ -12,8 +11,8 @@ use std::comm;
 #[allow(non_camel_case_types)]
 
 pub struct SRC_DATA {
-	pub data_in: &'static f32,
-	pub data_out: &'static mut f32,
+	pub data_in: *const f32,
+	pub data_out: *mut f32,
 	pub input_frames: u64,
 	pub output_frames: u64,
 	pub input_frames_used: u64,

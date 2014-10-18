@@ -1,6 +1,6 @@
 extern crate libc;
 extern crate core;
-extern crate debug;
+
 use libc::{c_int, c_void, size_t};
 use std::ptr::null;
 use core::mem::transmute;
@@ -63,7 +63,7 @@ pub fn pulse_sink(pData: Receiver<Vec<f32>>, sRate: uint) {
 	let mut error: c_int = 0;
 	unsafe {
 		let s = pa_simple_new(null(), "rust-pa-simple-sink".to_c_str().unwrap(), 1, null(), "pa-sink".to_c_str().unwrap(), &ss, null(), null(), &mut error);
-		println!("{:?}", pa_simple_get_latency(s, &mut error));
+		println!("{}", pa_simple_get_latency(s, &mut error));
 		'main : loop {
 			let samps = pData.recv();
 			if samps.len() == 0 { break 'main }
