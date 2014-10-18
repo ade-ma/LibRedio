@@ -1,0 +1,10 @@
+[package]
+name = "oblw"
+version = "0.0.2"
+authors = ["Ian Daniher <itdaniher@gmail.com>"]
+
+[lib]
+name = "oblw"
+
+[dependencies.usb]
+git = "https://github.com/kevinmehall/rust-usb.git"

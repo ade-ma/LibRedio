@@ -1,11 +1,11 @@
 extern crate usb;
-extern crate libusb;
 extern crate collections;
 extern crate native;
 
+use usb::libusb::LIBUSB_TRANSFER_TYPE_BULK;
 use std::comm;
 use std::vec;
-use collections::bitv;
+use std::collections::bitv;
 
 #[deriving(Clone)]
 pub struct Run {
@@ -29,7 +29,7 @@ pub fn B2b(bytes: &[u8]) -> bitv::Bitv {
 
 pub fn v2b(uints: Vec<uint>) -> bitv::Bitv {
 	let y: Vec<bool> = uints.iter().map(|&x| x == 1u).collect();
-	return bitv::from_bools(y.slice_from(0))
+	return bitv::from_fn(y.len(), |x|{*y.get(x)})
 }
 
 pub fn b2B(bits: bitv::Bitv) -> vec::Vec<u8> {
@@ -68,7 +68,7 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 	};
 
 	native::task::spawn(proc() {
-		ho.write_stream(0x02, libusb::LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |buf| {
+		ho.write_stream(0x02, LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |buf| {
 			let y = buf.unwrap();
 			match pDataI.try_recv() {
 				Ok(d) => {assemble_packet(y, d.as_slice(), defaultState); return true;},
@@ -84,7 +84,7 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 		}); });
 
 	let hi = handle.clone();
-	hi.read_stream(0x81, libusb::LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |res| {
+	hi.read_stream(0x81, LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |res| {
 		let y: Vec<u8> = res.unwrap().iter().map(|&x|x).collect();
 		cDataO.send_opt(y).is_ok()
 	});
@@ -96,7 +96,7 @@ pub fn bits_to_packets(p: comm::Receiver<bitv::Bitv>, c: comm::Sender<Vec<u8>>) 
 		for packet in bytes.slice_from(0).chunks(64) {
 			let mut packet: Vec<u8> = packet.iter().map(|&x| x).collect();
 			let len = packet.len();
-			packet.grow(64-len, &0x00);
+			packet.grow(64-len, 0x00);
 			c.send(packet);
 		}
 	}

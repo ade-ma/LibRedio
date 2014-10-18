@@ -8,15 +8,15 @@ extern crate dsputils;
 use num::complex::Complex;
 use std::comm::Sender;
 
-pub fn rtl_source_cmplx(v: Sender<Vec<Complex<f32>>>, cFreq: u32, gain: u32, sRate: u32) {
+pub fn rtl_source_cmplx(v: Sender<Vec<Complex<f32>>>, c_freq: u32, gain: u32, s_rate: u32) {
 	let block_size = 512;
-	let devHandle = rtlsdr::open_device();
-	rtlsdr::set_sample_rate(devHandle, sRate);
-	rtlsdr::clear_buffer(devHandle);
-	rtlsdr::set_gain(devHandle, gain);
-	rtlsdr::set_frequency(devHandle, cFreq);
+	let dev_handle = rtlsdr::open_device();
+	rtlsdr::set_sample_rate(dev_handle, s_rate);
+	rtlsdr::clear_buffer(dev_handle);
+	rtlsdr::set_gain(dev_handle, gain);
+	rtlsdr::set_frequency(dev_handle, c_freq);
 
-	let pdata = rtlsdr::read_async(devHandle, block_size);
+	let pdata = rtlsdr::read_async(dev_handle, block_size);
 	'main : loop {
 		let samples = match pdata.recv_opt() {
 			Ok(x) => rtlsdr::data_to_samples(x),
@@ -24,8 +24,8 @@ pub fn rtl_source_cmplx(v: Sender<Vec<Complex<f32>>>, cFreq: u32, gain: u32, sRa
 		};
 		v.send(samples);
 	}
-	rtlsdr::stop_async(devHandle);
-	rtlsdr::close(devHandle);
+	rtlsdr::stop_async(dev_handle);
+	rtlsdr::close(dev_handle);
 }
 
 pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
