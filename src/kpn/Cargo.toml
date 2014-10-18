@@ -1,0 +1,9 @@
+[package]
+
+name = "kpn"
+version = "0.0.2"
+authors = ["Ian Daniher <itdaniher@gmail.com>"]
+
+[lib]
+
+name = "kpn"

@@ -12,8 +12,8 @@ use std::comm;
 #[allow(non_camel_case_types)]
 
 pub struct SRC_DATA {
-	pub data_in: *f32,
-	pub data_out: *mut f32,
+	pub data_in: &'static f32,
+	pub data_out: &'static mut f32,
 	pub input_frames: u64,
 	pub output_frames: u64,
 	pub input_frames_used: u64,
@@ -30,15 +30,15 @@ pub static SRC_LINEAR: c_uint = 4;
 
 #[link(name="samplerate")]
 extern "C" {
-	pub fn src_new(converter_type: c_int, channels: c_int, error: &mut c_int) -> *c_void;
-	pub fn src_delete(state: *c_void ) -> *c_void;
-	pub fn src_process(state: *c_void, data: &SRC_DATA) -> c_int;
-	pub fn src_get_name(converter_type: c_int) -> *c_char;
-	pub fn src_get_description(converter_type: c_int) -> *c_char;
-	pub fn src_get_version() -> *c_char;
-	pub fn src_set_ratio(state: *mut c_void, new_ratio: c_double) -> c_int;
+	pub fn src_new(converter_type: c_int, channels: c_int, error: &mut c_int) -> &c_void;
+	pub fn src_delete(state: &c_void ) -> &c_void;
+	pub fn src_process(state: &c_void, data: &SRC_DATA) -> c_int;
+	pub fn src_get_name(converter_type: c_int) -> &c_char;
+	pub fn src_get_description(converter_type: c_int) -> &c_char;
+	pub fn src_get_version() -> &c_char;
+	pub fn src_set_ratio(state: &mut c_void, new_ratio: c_double) -> c_int;
 	pub fn src_is_valid_ratio(ratio: c_double) -> c_int;
-	pub fn src_strerror(error: c_int) -> *i8;
+	pub fn src_strerror(error: c_int) -> &i8;
 	/*pub fn src_callback_new(func: src_callback_t,
 		converter_type: c_int,
 		channels: c_int,

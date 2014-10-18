@@ -1,0 +1,7 @@
+[package]
+name = "pasimple"
+version = "0.0.2"
+authors = ["Ian Daniher <itdaniher@gmail.com>"]
+
+[lib]
+name = "pasimple"

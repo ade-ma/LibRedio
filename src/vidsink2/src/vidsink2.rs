@@ -1,13 +1,16 @@
+#![feature(globs)]
+
 extern crate sdl2;
 extern crate dsputils;
 extern crate native;
 
+use sdl2::{video};
 use std::comm;
 use native::task::spawn;
 use std::comm::{Receiver, Sender, Select, Handle, channel};
 
 
-pub fn draw_vector_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
+pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
@@ -45,11 +48,11 @@ pub fn draw_vector_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Windo
 }
 
 pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
-	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
+	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => fail!("")
 	};
-	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 		Ok(renderer) => renderer,
 		Err(err) => fail!("")
 	};
@@ -70,11 +73,11 @@ pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 	sdl2::quit();
 }
 pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
-	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::Shown) {
+	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => fail!("")
 	};
-	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 		Ok(renderer) => renderer,
 		Err(err) => fail!("")
 	};
@@ -93,14 +96,14 @@ pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 	sdl2::quit();
 }
 pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
-	sdl2::init(sdl2::InitVideo);
+	sdl2::init(sdl2::INIT_VIDEO);
 	let l = u.len() as int;
 	for x in u.move_iter() {
-		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300/l, 600, sdl2::video::Shown) {
+		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300/l, 600, sdl2::video::SHOWN) {
 			Ok(window) => window,
 			Err(err) => fail!("")
 		};
-		let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::Software){
+		let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 			Ok(renderer) => renderer,
 			Err(err) => fail!("")
 		};

@@ -1,0 +1,7 @@
+[package]
+name = "kissfft"
+version = "0.0.2"
+authors = ["Ian Daniher <itdaniher@gmail.com>"]
+
+[lib]
+name = "kissfft"
