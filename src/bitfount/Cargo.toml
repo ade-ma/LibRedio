@@ -6,5 +6,8 @@ authors = ["Ian Daniher <itdaniher@gmail.com>"]
 [dependencies.num]
 git = "https://github.com/rust-lang/num"
 
+[dependencies.rtlsdr]
+path = "../rtlsdr"
+
 [lib]
 name = "bitfount"

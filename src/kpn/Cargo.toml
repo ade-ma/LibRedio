@@ -4,6 +4,9 @@ name = "kpn"
 version = "0.0.2"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
+[dependencies.dsputils]
+path = "../dsputils"
+
 [lib]
 
 name = "kpn"
