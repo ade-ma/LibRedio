@@ -1,3 +1,9 @@
+*Cargo.lock
+*target
 *so
-amt
-temp
+lib/*
+data/*
+bins/*
+rsrc/*
+exts/*
+mdms/*
