@@ -1,4 +1,4 @@
-# libredio[![Build Status](https://travis-ci.org/ade-ma/libredio.svg?branch=master)](https://travis-ci.org/ade-ma/libredio)
+# libredio[![Build Status](https://travis-ci.org/ade-ma/LibRedio.svg?branch=master)](https://travis-ci.org/ade-ma/LibRedio)
 
 This repository contains a standard library of hardware abstractions and digital signal processing primitives useful for systems engineering, mixed domain signal processing, and wireless communication. It provides a collection of transformations and hardware/software abstractions for input and output. Audio and radio frequency spectrum analyzers, demodulators and decoders for arbitrary radio communication protocols, sound effects, and closed loop control loops can all be concisely implemented by connecting processes defined in the included functions via unidirectional communication channels. Rust's standard library provides statically typed streams with nonblocking writes and blocking reads, allowing completely isolated processes to efficiently exchange information of arbitrary type and dimension.
 
