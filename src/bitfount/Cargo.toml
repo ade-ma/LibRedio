@@ -1,9 +1,10 @@
 [package]
-
 name = "bitfount"
 version = "0.0.2"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
-[lib]
+[dependencies.num]
+git = "https://github.com/rust-lang/num"
 
+[lib]
 name = "bitfount"
