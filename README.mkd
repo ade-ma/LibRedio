@@ -1,51 +1,15 @@
+# libredio[![Build Status](https://travis-ci.org/ade-ma/libredio.svg?branch=master)](https://travis-ci.org/ade-ma/libredio)
+
 This repository contains a standard library of hardware abstractions and digital signal processing primitives useful for systems engineering, mixed domain signal processing, and wireless communication. It provides a collection of transformations and hardware/software abstractions for input and output. Audio and radio frequency spectrum analyzers, demodulators and decoders for arbitrary radio communication protocols, sound effects, and closed loop control loops can all be concisely implemented by connecting processes defined in the included functions via unidirectional communication channels. Rust's standard library provides statically typed streams with nonblocking writes and blocking reads, allowing completely isolated processes to efficiently exchange information of arbitrary type and dimension.
 
-* bitfount.rs
-
-Antiquated abstractions for processing radio information captured via RTLSDR hardware.
-
-* dsputils.rs
-
-A collection of basic digital signal processing filter generators and transformations.
-
-* kissfft.rs
-
-Bindings for the "kissfft" library by Mark Borgerding.
-
-* kpn.rs
-
-A standard library of stream manipulations designed for use with [RatPak](https://github.com/itdaniher/ratpak).
-
-* libusb.rs
-* usb.rs
-
-Rust bindings for LibUSB, written by Kevin Mehall.
-
-* oblw.rs
-
-Abstractions for using an ATXMEGA32A4U as a streaming 1b digital input/output device, operating at up to one megahertz.
-
-* outlet.rs
-
-Abstractions for using the above abstractions in conjunction with a 434MHz transmitter to communicate with remote controlled outlets manfuactured by ETekCity.
-
-* pasimple.rs
-
-Rust bindings for PulseAudio's "Simple" synchronous API.
-
-* rtlsdr.rs
-
-Rust bindings for librtlsdr, the software interface to software defined radio receivers using the RTL2832U chipset.
-
-* sndfile.rs
-* sndfile_ffi.rs
-
-Rust bindings for libsndfile, written by Jeremy Letang.
-
-* toml.rs
-
-A rust implementation of Tom's Obvious, Minimal Language, by Michael Neumann.
-
-* vidsink2.rs
-
-A video display sink for rendering streams of items or lists using LibSDL2 via [rust-sdl2](https://github.com/AngryLawyer/rust-sdl2).
+* bitfount, Antiquated abstractions for processing radio information captured via RTLSDR hardware.
+* dsputils, A collection of basic digital signal processing filter generators and transformations.
+* kissfft, Bindings for the "kissfft" library by Mark Borgerding.
+* kpn, A standard library of stream manipulations designed for use with [RatPak](https://github.com/itdaniher/ratpak).
+* usb, Rust bindings for LibUSB, written by Kevin Mehall.
+* oblw, Abstractions for using an ATXMEGA32A4U as a streaming 1b digital input/output device, operating at up to one megahertz.
+* outlet, Abstractions for using the above abstractions in conjunction with a 434MHz transmitter to communicate with remote controlled outlets manfuactured by ETekCity.
+* pasimple, Rust bindings for PulseAudio's "Simple" synchronous API.
+* rtlsdr, Rust bindings for librtlsdr, the software interface to software defined radio receivers using the RTL2832U chipset.
+* sndfile, Rust bindings for libsndfile, written by Jeremy Letang.
+* vidsink, A video display sink for rendering streams of items or lists using LibSDL2 via [rust-sdl2](https://github.com/AngryLawyer/rust-sdl2).
