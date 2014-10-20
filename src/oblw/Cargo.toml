@@ -7,4 +7,4 @@ authors = ["Ian Daniher <itdaniher@gmail.com>"]
 name = "oblw"
 
 [dependencies.usb]
-git = "https://github.com/kevinmehall/rust-usb.git"
+git = "https://github.com/kevinmehall/rust-usb"

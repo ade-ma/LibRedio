@@ -4,10 +4,13 @@ version = "0.0.2"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
 [dependencies.usb]
-git = "https://github.com/kevinmehall/rust-usb.git"
+git = "https://github.com/kevinmehall/rust-usb"
 
 [dependencies.toml]
 git = "https://github.com/alexcrichton/toml-rs"
+
+[dependencies.num]
+git = "https://github.com/rust-lang/num"
 
 [dependencies.bitfount]
 path = "src/bitfount"
