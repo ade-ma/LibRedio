@@ -7,8 +7,6 @@ use std::comm::{Sender, Receiver, Select, Handle, Messages};
 
 use std::iter::AdditiveIterator;
 
-use std::vec;
-
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::{Listener, Acceptor};
 

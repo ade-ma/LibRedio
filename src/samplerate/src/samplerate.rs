@@ -1,6 +1,5 @@
 extern crate libc;
 
-use std::ptr;
 use std::vec;
 use std::str;
 use libc::{c_int, c_void, c_double, c_char, c_float, c_long, c_uint};
