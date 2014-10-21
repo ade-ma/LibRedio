@@ -1,0 +1,3 @@
+[submodule "src/kissfft/libkissfft"]
+	path = src/kissfft/libkissfft
+	url = https://github.com/itdaniher/kissfft/

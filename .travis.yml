@@ -1,4 +1,8 @@
 language: rust
+
+install:
+    - sudo apt-get install libusb-dev libpulse-dev libsdl2-dev librtlsdr-dev
+
 script:
   - cargo update
   - cargo build --verbose
