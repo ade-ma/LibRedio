@@ -50,11 +50,11 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Wi
 pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
-		Err(err) => fail!("")
+		Err(err) => panic!("")
 	};
 	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 		Ok(renderer) => renderer,
-		Err(err) => fail!("")
+		Err(err) => panic!("")
 	};
 	renderer.set_logical_size(1300, 600);
 	'main : loop {
@@ -75,11 +75,11 @@ pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
-		Err(err) => fail!("")
+		Err(err) => panic!("")
 	};
 	let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 		Ok(renderer) => renderer,
-		Err(err) => fail!("")
+		Err(err) => panic!("")
 	};
 	let mut data: Vec<f32> = range(0, size).map(|_|0f32).collect();
 	renderer.set_logical_size(1300, 600);
@@ -101,11 +101,11 @@ pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
 	for x in u.move_iter() {
 		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300/l, 600, sdl2::video::SHOWN) {
 			Ok(window) => window,
-			Err(err) => fail!("")
+			Err(err) => panic!("")
 		};
 		let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, sdl2::render::SOFTWARE){
 			Ok(renderer) => renderer,
-			Err(err) => fail!("")
+			Err(err) => panic!("")
 		};
 		renderer.set_logical_size(1300/l, 600);
 		native::task::spawn(proc() {

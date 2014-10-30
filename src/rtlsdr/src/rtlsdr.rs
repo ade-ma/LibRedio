@@ -63,7 +63,7 @@ pub fn open_device() -> *mut c_void {
 				break 'tryDevices
 			}
 			if i > get_device_count() {
-				fail!("no available devices");
+				panic!("no available devices");
 			}
 			i += 1;
 		}

@@ -52,11 +52,11 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 	c.setDebug(2);
 	let dev = match c.find_by_vid_pid(0x59e3, 0xf000) {
 		Some(x) => x,
-		None => fail!("no dev found"),
+		None => panic!("no dev found"),
 	};
 	let handle = match dev.open() {
 		Ok(x) => x,
-		Err(code) => fail!("cannot open device {}", code),
+		Err(code) => panic!("cannot open device {}", code),
 	};
 	handle.claim_interface(0);
 	let ho = handle.clone();
