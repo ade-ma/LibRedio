@@ -72,7 +72,7 @@ pub fn resample(din: comm::Receiver<Vec<f32>>, dout: comm::Sender<Vec<f32>>, rat
 		};
 		let error = unsafe { src_process(ctx, &src_data)};
 		if error != 0 {
-			let error_msg = unsafe { str::raw::from_c_str(src_strerror(error))};
+			let error_msg = unsafe { str::raw::c_str_to_static_slice(src_strerror(error))};
 			panic!("{}", error_msg);
 		}
 		unsafe{vout.set_len(src_data.output_frames_gen as uint)};

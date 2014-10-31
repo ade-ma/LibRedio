@@ -6,11 +6,12 @@ extern crate native;
 
 use sdl2::{video};
 use std::comm;
-use native::task::spawn;
+use std::task::TaskBuilder;
+use native::task::NativeTaskBuilder;
 use std::comm::{Receiver, Sender, Select, Handle, channel};
 
 
-pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Window>, mut data: Vec<f32>) {
+pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
@@ -33,7 +34,7 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer<sdl2::video::Wi
 	let width = if width > 1.0 { width } else { 1.0 };
 	renderer.set_draw_color(sdl2::pixels::RGB(0, 127, 7));
 	let rs: Vec<sdl2::rect::Rect> = range(0, data.len()).map(|i| {
-		let &x = data.get(i);
+		let x = data[i];
 		let mut yf = if dmin > 0.0 { height } else {height*0.5f32};
 		let mut hf = scale*x;
 		if x > 0f32 {yf -= x*scale;}
@@ -89,7 +90,7 @@ pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 			_ => {}
 		}
 		data.pop();
-		data.unshift(pDataC.recv());
+		data.insert(0, pDataC.recv());
 		draw_vector_as_barplot(&renderer, data.clone());
 		renderer.present()
 	}
@@ -98,7 +99,7 @@ pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
 	sdl2::init(sdl2::INIT_VIDEO);
 	let l = u.len() as int;
-	for x in u.move_iter() {
+	for x in u.into_iter() {
 		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::PosCentered, sdl2::video::PosCentered, 1300/l, 600, sdl2::video::SHOWN) {
 			Ok(window) => window,
 			Err(err) => panic!("")
@@ -108,7 +109,7 @@ pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
 			Err(err) => panic!("")
 		};
 		renderer.set_logical_size(1300/l, 600);
-		native::task::spawn(proc() {
+		TaskBuilder::new().native().spawn(proc() {
 		'main : loop {
 			match sdl2::event::poll_event() {
 				sdl2::event::QuitEvent(_) => break 'main,

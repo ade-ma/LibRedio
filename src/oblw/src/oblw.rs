@@ -6,6 +6,8 @@ use usb::libusb::LIBUSB_TRANSFER_TYPE_BULK;
 use std::comm;
 use std::vec;
 use std::collections::bitv;
+use native::task::NativeTaskBuilder;
+use std::task::TaskBuilder;
 
 #[deriving(Clone)]
 pub struct Run {
@@ -29,7 +31,7 @@ pub fn B2b(bytes: &[u8]) -> bitv::Bitv {
 
 pub fn v2b(uints: Vec<uint>) -> bitv::Bitv {
 	let y: Vec<bool> = uints.iter().map(|&x| x == 1u).collect();
-	return bitv::from_fn(y.len(), |x|{*y.get(x)})
+	return bitv::from_fn(y.len(), |x|{y[x]})
 }
 
 pub fn b2B(bits: bitv::Bitv) -> vec::Vec<u8> {
@@ -49,7 +51,6 @@ fn assemble_packet(y: &mut [u8], x: &[u8], norm: bool) {
 
 pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm::Sender<Vec<u8>>, defaultState: bool)  {
 	let c = usb::Context::new();
-	c.setDebug(2);
 	let dev = match c.find_by_vid_pid(0x59e3, 0xf000) {
 		Some(x) => x,
 		None => panic!("no dev found"),
@@ -66,8 +67,7 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 		// high value - 3v3 - turn off inversion
 		true => handle.ctrl_read(0x40|0x80, 0x08, 0x00, 0x0653, 0).unwrap(),
 	};
-
-	native::task::spawn(proc() {
+	TaskBuilder::new().native().spawn(proc() {
 		ho.write_stream(0x02, LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |buf| {
 			let y = buf.unwrap();
 			match pDataI.try_recv() {

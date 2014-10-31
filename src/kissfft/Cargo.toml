@@ -3,7 +3,7 @@ name = "kissfft"
 version = "0.0.2"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
-build = ["make -C libkissfft", "sudo mv ./libkissfft/libkissfft.so /usr/lib/"]
+build = ["make -C libkissfft", "mv ./libkissfft/libkissfft.so /usr/local/lib/"]
 
 [dependencies.num]
 git = "https://github.com/rust-lang/num"
