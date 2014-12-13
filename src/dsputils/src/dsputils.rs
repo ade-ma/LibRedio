@@ -1,15 +1,15 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
-
+#![feature(globs)]
 extern crate num;
 
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
-use std::iter::AdditiveIterator;
 use std::f32;
+use std::num::*;
 
 pub fn sum<T: Num+Primitive>(xs: &[T]) -> T {
-	let mut out: T = std::num::zero();
+	let mut out: T = zero();
 	if xs.len() != 0 {
 		for i in range(0, xs.len()) {
 			out = out + xs[i];
@@ -37,7 +37,7 @@ pub fn min<T: FloatMath+Num>(xs: &[T]) -> T {
 
 #[inline(always)]
 pub fn convolve<T: Num+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
-	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).sum()}).collect()
+	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).fold(zero(), |a:T , b| a + b)}).collect()
 }
 
 // filter code accepts:
@@ -83,7 +83,7 @@ pub fn lpf(m: uint, fc: f32) -> Vec<f32> {
 pub fn hpf(m: uint, fc: f32) -> Vec<f32> {
 	let l = lpf(m, fc);
 	let mut h: Vec<f32> = l.iter().map(|&x| -x ).collect();
-	*h.get_mut(m/2-1) += 1.0;
+	*h.get_mut(m/2-1).unwrap() += 1.0;
 	return h;
 }
 
@@ -92,7 +92,7 @@ pub fn bsf(m: uint, fc1: f32, fc2: f32) -> Vec<f32> {
 	let lp = lpf(m, fc1);
 	let hp = hpf(m, fc2);
 	let mut h: Vec<f32> = lp.iter().zip(hp.iter()).map(|(&x, &y)| x+y).collect();
-	*h.get_mut(m/2-1) -= 1.0;
+	*h.get_mut(m/2-1).unwrap() -= 0.0;
 	return h;
 }
 
