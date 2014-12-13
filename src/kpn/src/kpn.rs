@@ -2,11 +2,11 @@
    Distributed under the terms of the GPLv3. */
 
 extern crate dsputils;
-
+extern crate num;
 use std::comm::{Sender, Receiver, Select, Handle, Messages};
 
 use std::iter::AdditiveIterator;
-
+use std::num::{Float, Num}; 
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::io::{Listener, Acceptor};
 
