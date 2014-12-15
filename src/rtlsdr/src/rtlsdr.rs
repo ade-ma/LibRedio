@@ -2,11 +2,9 @@
    Distributed under the terms of the GPLv3. */
 
 extern crate num;
-extern crate native;
 extern crate libc;
 
 use num::complex;
-use native::task::NativeTaskBuilder;
 use libc::{c_int, c_uint, c_void};
 use std::comm::{Sender, Receiver, channel};
 use std::ptr;
@@ -118,7 +116,7 @@ extern fn rtlsdr_callback(buf: *const u8, len: u32, chan: &Sender<Vec<u8>>) {
 
 pub fn read_async(dev: *mut c_void, block_size: u32) -> Receiver<Vec<u8>> {
 	let (chan, port) = channel();
-	TaskBuilder::new().native().spawn(proc() {
+	TaskBuilder::new().spawn(proc() {
 		unsafe{
 			rtlsdr_read_async(dev, rtlsdr_callback, &chan, 32, block_size*2);
 		}

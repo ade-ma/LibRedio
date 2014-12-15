@@ -1,4 +1,3 @@
-extern crate native;
 extern crate num;
 extern crate libc;
 

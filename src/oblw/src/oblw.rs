@@ -1,12 +1,10 @@
 extern crate usb;
 extern crate collections;
-extern crate native;
 
 use usb::libusb::LIBUSB_TRANSFER_TYPE_BULK;
 use std::comm;
 use std::vec;
 use std::collections::bitv;
-use native::task::NativeTaskBuilder;
 use std::task::TaskBuilder;
 
 #[deriving(Clone)]
@@ -67,7 +65,7 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 		// high value - 3v3 - turn off inversion
 		true => handle.ctrl_read(0x40|0x80, 0x08, 0x00, 0x0653, 0).unwrap(),
 	};
-	TaskBuilder::new().native().spawn(proc() {
+	TaskBuilder::new().spawn(proc() {
 		ho.write_stream(0x02, LIBUSB_TRANSFER_TYPE_BULK, 64, 8, |buf| {
 			let y = buf.unwrap();
 			match pDataI.try_recv() {
@@ -75,8 +73,8 @@ pub fn spawn_bytestream(pDataI: std::comm::Receiver<Vec<u8>>, cDataO: std::comm:
 				Err(code) => {
 					//println!("write_stream err: {:?}", code);
 					match defaultState {
-						true => assemble_packet(y, [0xffu8, ..64], defaultState),
-						false => assemble_packet(y, [0x00u8, ..64], defaultState)
+						true => assemble_packet(y, &[0xffu8, ..64], defaultState),
+						false => assemble_packet(y, &[0x00u8, ..64], defaultState)
 					};
 					return true;
 				},
