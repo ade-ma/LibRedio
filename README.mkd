@@ -6,10 +6,8 @@ This repository contains a standard library of hardware abstractions and digital
 * dsputils, A collection of basic digital signal processing filter generators and transformations.
 * kissfft, Bindings for the "kissfft" library by Mark Borgerding.
 * kpn, A standard library of stream manipulations designed for use with [RatPak](https://github.com/itdaniher/ratpak).
-* usb, Rust bindings for LibUSB, written by Kevin Mehall.
 * oblw, Abstractions for using an ATXMEGA32A4U as a streaming 1b digital input/output device, operating at up to one megahertz.
 * outlet, Abstractions for using the above abstractions in conjunction with a 434MHz transmitter to communicate with remote controlled outlets manfuactured by ETekCity.
 * pasimple, Rust bindings for PulseAudio's "Simple" synchronous API.
 * rtlsdr, Rust bindings for librtlsdr, the software interface to software defined radio receivers using the RTL2832U chipset.
-* sndfile, Rust bindings for libsndfile, written by Jeremy Letang.
 * vidsink, A video display sink for rendering streams of items or lists using LibSDL2 via [rust-sdl2](https://github.com/AngryLawyer/rust-sdl2).
