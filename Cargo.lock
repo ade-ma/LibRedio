@@ -6,13 +6,13 @@ dependencies = [
  "dsputils 0.0.2",
  "kissfft 0.0.2",
  "kpn 0.0.2",
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
  "oblw 0.0.2",
  "pasimple 0.0.2",
  "rtlsdr 0.0.2",
  "samplerate 0.0.2",
- "toml 0.1.0 (git+https://github.com/alexcrichton/toml-rs#7b2aa23dbdf21dcd4fa34e5ac2d58cba06b19dff)",
- "usb 0.1.0 (git+https://github.com/kevinmehall/rust-usb#2edfe6bfefccc22c9bad5a96d6a6634656b0a2fc)",
+ "toml 0.1.4 (git+https://github.com/alexcrichton/toml-rs)",
+ "usb 0.1.2 (git+https://github.com/kevinmehall/rust-usb)",
  "vidsink 0.0.2",
  "wavio 0.0.2",
 ]
@@ -21,7 +21,7 @@ dependencies = [
 name = "bitfount"
 version = "0.0.2"
 dependencies = [
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
  "rtlsdr 0.0.2",
 ]
 
@@ -29,14 +29,14 @@ dependencies = [
 name = "dsputils"
 version = "0.0.2"
 dependencies = [
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
 ]
 
 [[package]]
 name = "kissfft"
 version = "0.0.2"
 dependencies = [
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
 ]
 
 [[package]]
@@ -48,14 +48,14 @@ dependencies = [
 
 [[package]]
 name = "num"
-version = "0.0.1"
-source = "git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257"
+version = "0.0.6"
+source = "git+https://github.com/rust-lang/num#32ae02d87d04c62331b9c125f6747ad480211d42"
 
 [[package]]
 name = "oblw"
 version = "0.0.2"
 dependencies = [
- "usb 0.1.0 (git+https://github.com/kevinmehall/rust-usb#2edfe6bfefccc22c9bad5a96d6a6634656b0a2fc)",
+ "usb 0.1.2 (git+https://github.com/kevinmehall/rust-usb)",
 ]
 
 [[package]]
@@ -66,7 +66,7 @@ version = "0.0.2"
 name = "rtlsdr"
 version = "0.0.2"
 dependencies = [
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
 ]
 
 [[package]]
@@ -75,37 +75,37 @@ version = "0.0.2"
 
 [[package]]
 name = "sdl2"
-version = "0.0.1-alpha.1"
-source = "git+https://github.com/AngryLawyer/rust-sdl2#07aa0591ecc2459622aa0bdbd653083253c38b06"
+version = "0.0.9"
+source = "git+https://github.com/AngryLawyer/rust-sdl2#61935c86ce4eea0cadb973d60270eceeabc62da0"
 
 [[package]]
 name = "sndfile"
 version = "0.0.1"
-source = "git+https://github.com/jeremyletang/rust-sndfile#619719168e3c4d2a45c75336078b629e2e9c7882"
+source = "git+https://github.com/jeremyletang/rust-sndfile#b18adb4777c424c8a4ef680cab0b0ec9cca90ee4"
 
 [[package]]
 name = "toml"
-version = "0.1.0"
-source = "git+https://github.com/alexcrichton/toml-rs#7b2aa23dbdf21dcd4fa34e5ac2d58cba06b19dff"
+version = "0.1.4"
+source = "git+https://github.com/alexcrichton/toml-rs#944b94c21a064d0b1ad80ccabf12d95726c72139"
 
 [[package]]
 name = "usb"
-version = "0.1.0"
-source = "git+https://github.com/kevinmehall/rust-usb#2edfe6bfefccc22c9bad5a96d6a6634656b0a2fc"
+version = "0.1.2"
+source = "git+https://github.com/kevinmehall/rust-usb#f8c2696ba16f247313c620851f0a037b14530968"
 
 [[package]]
 name = "vidsink"
 version = "0.0.2"
 dependencies = [
  "dsputils 0.0.2",
- "sdl2 0.0.1-alpha.1 (git+https://github.com/AngryLawyer/rust-sdl2#07aa0591ecc2459622aa0bdbd653083253c38b06)",
+ "sdl2 0.0.9 (git+https://github.com/AngryLawyer/rust-sdl2)",
 ]
 
 [[package]]
 name = "wavio"
 version = "0.0.2"
 dependencies = [
- "num 0.0.1 (git+https://github.com/rust-lang/num#52e2afa3040134b06384fb3ac6f78184cf9a6257)",
- "sndfile 0.0.1 (git+https://github.com/jeremyletang/rust-sndfile#619719168e3c4d2a45c75336078b629e2e9c7882)",
+ "num 0.0.6 (git+https://github.com/rust-lang/num)",
+ "sndfile 0.0.1 (git+https://github.com/jeremyletang/rust-sndfile)",
 ]
 
