@@ -1,50 +1,41 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
-#![feature(globs)]
 extern crate num;
 
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
-use std::f32;
 use std::num::*;
+use std::f32;
+use std::ops::*;
+use num::Zero;
 
-pub fn sum<T: Num+Primitive>(xs: &[T]) -> T {
-	let mut out: T = zero();
-	if xs.len() != 0 {
-		for i in range(0, xs.len()) {
-			out = out + xs[i];
-		}
-	}
-	return out
+#[inline(always)]
+pub fn mean(xs: &[f64]) -> f64 {
+	let l = xs.len() as f64;
+	let s = xs.iter().fold(0f64, |sum, &x| { sum + x });
+	return (s/l);
 }
 
 #[inline(always)]
-pub fn mean<T: Num+Primitive+ToPrimitive>(xs: &[T]) -> f32 {
-	let l = xs.len() as f32;
-	let s = sum(xs).to_f32().unwrap()/l;
-	return s/l
-}
-
-#[inline(always)]
-pub fn max<T: FloatMath+Num>(xs: &[T]) -> T {
+pub fn max<T: Float>(xs: &[T]) -> T {
 	xs.iter().fold(xs[0], |a, &b| a.max(b))
 }
 
 #[inline(always)]
-pub fn min<T: FloatMath+Num>(xs: &[T]) -> T {
+pub fn min<T: Float>(xs: &[T]) -> T {
 	xs.iter().fold(xs[0], |a, &b| a.min(b))
 }
 
 #[inline(always)]
-pub fn convolve<T: Num+Primitive+ToPrimitive>(u: &[T], v: &[T]) -> Vec<T> {
-	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).fold(zero(), |a:T , b| a + b)}).collect()
+pub fn convolve<T: Float>(u: &[T], v: &[T]) -> Vec<T> {
+	u.windows(v.len()).map(|x| {x.iter().zip(v.iter()).map(|(&x, &y)| x*y).fold(Float::zero(), |a:T , b| a + b)}).collect()
 }
 
 // filter code accepts:
-//	m, uint, tap length
+//	m, usize, tap length
 //	fc, f32, decimal ratio of corner to sampling freqs
 
-pub fn window(m: uint) -> Vec<f32> {
+pub fn window(m: usize) -> Vec<f32> {
 	let n = m as f32;
 	let pi = f32::consts::PI;
 	// blackman-nuttall coefficients
@@ -59,7 +50,7 @@ pub fn window(m: uint) -> Vec<f32> {
 	}).collect()
 }
 
-pub fn sinc(m: uint, fc: f32) -> Vec<f32> {
+pub fn sinc(m: usize, fc: f32) -> Vec<f32> {
 	// fc should always specify corner below nyquist
 	assert!(fc < 0.5);
 	let pi = f32::consts::PI;
@@ -72,7 +63,7 @@ pub fn sinc(m: uint, fc: f32) -> Vec<f32> {
 }
 
 // low-pass filter
-pub fn lpf(m: uint, fc: f32) -> Vec<f32> {
+pub fn lpf(m: usize, fc: f32) -> Vec<f32> {
 //	assert_eq!(m % 2, 1);
 	let w = window(m);
 	let s = sinc(m, fc);
@@ -80,7 +71,7 @@ pub fn lpf(m: uint, fc: f32) -> Vec<f32> {
 }
 
 // high-pass filter
-pub fn hpf(m: uint, fc: f32) -> Vec<f32> {
+pub fn hpf(m: usize, fc: f32) -> Vec<f32> {
 	let l = lpf(m, fc);
 	let mut h: Vec<f32> = l.iter().map(|&x| -x ).collect();
 	*h.get_mut(m/2-1).unwrap() += 1.0;
@@ -88,7 +79,7 @@ pub fn hpf(m: uint, fc: f32) -> Vec<f32> {
 }
 
 // band-stop filter
-pub fn bsf(m: uint, fc1: f32, fc2: f32) -> Vec<f32> {
+pub fn bsf(m: usize, fc1: f32, fc2: f32) -> Vec<f32> {
 	let lp = lpf(m, fc1);
 	let hp = hpf(m, fc2);
 	let mut h: Vec<f32> = lp.iter().zip(hp.iter()).map(|(&x, &y)| x+y).collect();
@@ -97,7 +88,7 @@ pub fn bsf(m: uint, fc1: f32, fc2: f32) -> Vec<f32> {
 }
 
 // bandpass filter
-pub fn bpf(m:uint, fc1: f32, fc2: f32) -> Vec<f32> {
+pub fn bpf(m:usize, fc1: f32, fc2: f32) -> Vec<f32> {
 	let b = bsf(m, fc1, fc2);
 	b.iter().map(|&x| -x ).collect()
 }
