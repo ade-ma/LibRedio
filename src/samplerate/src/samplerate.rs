@@ -2,8 +2,9 @@ extern crate libc;
 
 use std::vec;
 use std::str;
+use std::ffi;
 use libc::{c_int, c_void, c_double, c_char, c_float, c_long, c_uint};
-use std::comm;
+use std::sync::mpsc::{Receiver,Sender,channel};
 
 // bindings for SRC - http://www.mega-nerd.com/SRC/index.html
 
@@ -36,7 +37,7 @@ extern "C" {
 	pub fn src_get_version() -> &c_char;
 	pub fn src_set_ratio(state: &mut c_void, new_ratio: c_double) -> c_int;
 	pub fn src_is_valid_ratio(ratio: c_double) -> c_int;
-	pub fn src_strerror(error: c_int) -> &i8;
+	pub fn src_strerror(error: c_int) -> *const i8;
 	/*pub fn src_callback_new(func: src_callback_t,
 		converter_type: c_int,
 		channels: c_int,
@@ -53,12 +54,12 @@ extern "C" {
 }
 
 
-pub fn resample(din: comm::Receiver<Vec<f32>>, dout: comm::Sender<Vec<f32>>, ratio: f64) {
+pub fn resample(din: Receiver<Vec<f32>>, dout: Sender<Vec<f32>>, ratio: f64) {
 	let mut error: c_int = 0;
 	let ctx = unsafe { src_new(1, 1, &mut error)};
 	loop {
-		let vin = din.recv();
-		let lout: uint = ((ratio * vin.len() as f64) + 1f64) as uint;
+		let vin = din.recv().unwrap();
+		let lout: usize = ((ratio * vin.len() as f64) + 1f64) as usize;
 		let mut vout = vec::Vec::with_capacity(lout);
 		let src_data = SRC_DATA {
 			data_in : vin.as_ptr(),
@@ -72,11 +73,14 @@ pub fn resample(din: comm::Receiver<Vec<f32>>, dout: comm::Sender<Vec<f32>>, rat
 		};
 		let error = unsafe { src_process(ctx, &src_data)};
 		if error != 0 {
-			let error_msg = unsafe { str::raw::c_str_to_static_slice(src_strerror(error))};
-			panic!("{}", error_msg);
+			unsafe {
+				let error_msg_raw = src_strerror(error);
+				let error_msg_slice = ffi::c_str_to_bytes(&error_msg_raw);
+				panic!("{}", str::from_utf8(error_msg_slice).unwrap());
+			}
 		}
-		unsafe{vout.set_len(src_data.output_frames_gen as uint)};
-		dout.send(vout);
+		unsafe{vout.set_len(src_data.output_frames_gen as usize)};
+		dout.send(vout).unwrap();
 	}
 }
 
