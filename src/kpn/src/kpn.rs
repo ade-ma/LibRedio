@@ -56,8 +56,8 @@ pub fn decoder(u: Receiver<Vec<usize>>, v: Sender<Vec<usize>>, t: &[usize]) {
 	use std::iter::AdditiveIterator;
 	loop {
 		let p = u.recv().unwrap();
-		let i: AdditiveIterator<usize> = t.iter();
-		if p.len() >= i.sum() {
+		let i: usize = t.iter().map(|&x|x).sum();
+		if p.len() >= i {
 			let b = eat(p.slice_from(0), t);
 			v.send(b).unwrap();
 		};
@@ -94,7 +94,7 @@ pub fn unpacketizer<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 }
 
 
-pub fn print_sink<T: std::fmt::Show+Send>(u: Receiver<T>) {
+pub fn print_sink<T: std::fmt::String+Send>(u: Receiver<T>) {
 	loop {
 		println!("{}", u.recv().unwrap())
 	}
