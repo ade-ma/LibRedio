@@ -113,25 +113,25 @@ pub fn eat(x: &[usize], is: &[usize]) -> Vec<usize> {
 	}
 	return out
 }
-pub fn applicator<T: Clone+Send>(u: Receiver<T>, v: Sender<T>, f: Fn(T)->T) {
+pub fn applicator<T: Clone+Send>(u: Receiver<T>, v: Sender<T>, f: &Fn(T)->T) {
 	loop {
 		v.send(f(u.recv().unwrap())).unwrap()
 	}
 }
 
-pub fn applicator_vecs<T: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, f: Fn(&T)->T) {
+pub fn applicator_vecs<T: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<T>>, f: &Fn(&T)->T) {
 	loop {
 		v.send(u.recv().unwrap().iter().map(|x|f(x)).collect()).unwrap()
 	}
 }
 
-pub fn soft_source<T: Send+Clone>(v: Sender<T>, f: Fn(Sender<T>)) {
+pub fn soft_source<T: Send+Clone>(v: Sender<T>, f: &Fn(Sender<T>)) {
 	f(v.clone());
 	let (s,r) = channel::<()>();
 	r.recv().unwrap();
 }
 
-pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: Fn(std::sync::mpsc::Iter<T>, Sender<U>)) {
+pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: &Fn(std::sync::mpsc::Iter<T>, Sender<U>)) {
 	f(u.iter(), v)
 }
 
@@ -144,13 +144,13 @@ pub fn looper_optional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<T>){
 	}
 }
 
-pub fn cross_applicator<T: Clone+Send, U: Clone+Send>(u: Receiver<T>, v: Sender<U>, f: Fn(T)->U) {
+pub fn cross_applicator<T: Clone+Send, U: Clone+Send>(u: Receiver<T>, v: Sender<U>, f: &Fn(T)->U) {
 	loop {
 		v.send(f(u.recv().unwrap())).unwrap()
 	}
 }
 
-pub fn cross_applicator_vecs<T: Clone+Send, U: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<U>>, f: Fn(&T)->U) {
+pub fn cross_applicator_vecs<T: Clone+Send, U: Clone+Send>(u: Receiver<Vec<T>>, v: Sender<Vec<U>>, f: &Fn(&T)->U) {
 	loop {
 		v.send(u.recv().unwrap().iter().map(|x|f(x)).collect()).unwrap()
 	}
