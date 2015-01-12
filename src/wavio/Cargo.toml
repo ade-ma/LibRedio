@@ -5,7 +5,7 @@ version = "0.0.2"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
 [dependencies.sndfile]
-git = "https://github.com/jeremyletang/rust-sndfile"
+git = "https://github.com/nwoeanhinnogaehr/rust-sndfile"
 
 [dependencies.num]
 git = "https://github.com/rust-lang/num"
