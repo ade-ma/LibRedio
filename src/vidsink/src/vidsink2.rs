@@ -1,18 +1,15 @@
-#![feature(globs)]
-
 extern crate sdl2;
 extern crate dsputils;
 
-use std::comm;
-use std::task::TaskBuilder;
-use std::comm::{Receiver, Sender, Select, Handle, channel};
+use std::sync::mpsc::{Receiver, Sender, channel, Handle, Select};
+use std::thread::Thread;
 
 
 pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
-	let px: uint = sw as uint;
+	let px: usize = sw as usize;
 	let decimate_factor = (px as f32 - (0.5f32*(data.len() as f32/px as f32)) ) / data.len() as f32;
 	data = data.iter().enumerate().filter_map(|(x, &y)|
 		if ((x as f32*decimate_factor) - (x as f32*decimate_factor).floor()) < decimate_factor { Some(y) } else { None }
@@ -45,7 +42,7 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<
 	renderer.fill_rects(rs.slice_from(0));
 }
 
-pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
+pub fn vidsink_vecs(pDataC: Receiver<Vec<f32>>) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => panic!("")
@@ -60,7 +57,7 @@ pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 			sdl2::event::Event::Quit(_) => break 'main,
 			_ => {}
 		}
-		match pDataC.try_recv() {
+		match pDataC.recv() {
 			Ok(d) => {
 				draw_vector_as_barplot(&renderer, d);
 			}
@@ -70,7 +67,7 @@ pub fn vidsink_vecs(pDataC: comm::Receiver<Vec<f32>>) {
 	}
 	sdl2::quit();
 }
-pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
+pub fn vidsink(pDataC: Receiver<f32>, size: usize) {
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => panic!("")
@@ -87,15 +84,15 @@ pub fn vidsink(pDataC: comm::Receiver<f32>, size: uint) {
 			_ => {}
 		}
 		data.pop();
-		data.insert(0, pDataC.recv());
+		data.insert(0, pDataC.recv().unwrap());
 		draw_vector_as_barplot(&renderer, data.clone());
 		renderer.present()
 	}
 	sdl2::quit();
 }
-pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
+pub fn many_vidsink(u: Vec<Receiver<Vec<f32>>>) {
 	sdl2::init(sdl2::INIT_VIDEO);
-	let l = u.len() as int;
+	let l = u.len() as isize;
 	for x in u.into_iter() {
 		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300/l, 600, sdl2::video::SHOWN) {
 			Ok(window) => window,
@@ -106,13 +103,13 @@ pub fn many_vidsink(u: Vec<comm::Receiver<Vec<f32>>>) {
 			Err(err) => panic!("")
 		};
 		renderer.set_logical_size(1300/l, 600);
-		TaskBuilder::new().spawn(proc() {
+		Thread::spawn(move || {
 		'main : loop {
 			match sdl2::event::poll_event() {
 				sdl2::event::Event::Quit(_) => break 'main,
 				_ => {}
 			};
-			match x.try_recv() {
+			match x.recv() {
 				Ok(d) => draw_vector_as_barplot(&renderer, d),
 				Err(_) => {}
 			};
