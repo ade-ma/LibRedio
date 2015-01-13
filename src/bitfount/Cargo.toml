@@ -9,5 +9,8 @@ git = "https://github.com/rust-lang/num"
 [dependencies.rtlsdr]
 path = "../rtlsdr"
 
+[dependencies.dsputils]
+path = "../dsputils"
+
 [lib]
 name = "bitfount"
