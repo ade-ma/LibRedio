@@ -3,7 +3,7 @@ extern crate dsputils;
 
 use std::sync::mpsc::{Receiver, Sender, channel, Handle, Select};
 use std::thread::Thread;
-
+use std::intrinsics::floorf32;
 
 pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
 	// downsample to 800px if needbe
@@ -12,7 +12,9 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<
 	let px: usize = sw as usize;
 	let decimate_factor = (px as f32 - (0.5f32*(data.len() as f32/px as f32)) ) / data.len() as f32;
 	data = data.iter().enumerate().filter_map(|(x, &y)|
-		if ((x as f32*decimate_factor) - (x as f32*decimate_factor).floor()) < decimate_factor { Some(y) } else { None }
+        unsafe {
+		    if ((x as f32*decimate_factor) - floorf32(x as f32*decimate_factor)) < decimate_factor { Some(y) } else { None }
+        }
 	 ).collect();
 	// black screen background
 	renderer.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
@@ -103,7 +105,6 @@ pub fn many_vidsink(u: Vec<Receiver<Vec<f32>>>) {
 			Err(err) => panic!("")
 		};
 		renderer.set_logical_size(1300/l, 600);
-		Thread::spawn(move || {
 		'main : loop {
 			match sdl2::event::poll_event() {
 				sdl2::event::Event::Quit(_) => break 'main,
@@ -114,7 +115,8 @@ pub fn many_vidsink(u: Vec<Receiver<Vec<f32>>>) {
 				Err(_) => {}
 			};
 			renderer.present();
-		}});
+		};
+	    sdl2::quit();
 	}
 }
 
