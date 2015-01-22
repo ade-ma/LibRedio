@@ -94,9 +94,13 @@ pub fn unpacketizer<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 }
 
 
-pub fn print_sink<T: std::fmt::String+Send>(u: Receiver<T>) {
+pub fn print_sink<T: std::fmt::Show+Send>(u: Receiver<T>) {
 	loop {
-		println!("{}", u.recv().unwrap())
+		//println!("{}", u.recv().unwrap())
+        match u.recv() {
+            Ok(x) => println!("{:?}", x),
+            Err(x) => println!("{:?}", x),
+        }
 	}
 }
 
@@ -131,7 +135,7 @@ pub fn soft_source<T: Send+Clone>(v: Sender<T>, f: &Fn(Sender<T>)) {
 	r.recv().unwrap();
 }
 
-pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: &Fn(std::sync::mpsc::Iter<T>, Sender<U>)) {
+pub fn looper<T: Send+Clone, U: Send+Clone>(u: Receiver<T>, v: Sender<U>, f: &mut FnMut(std::sync::mpsc::Iter<T>, Sender<U>)) {
 	f(u.iter(), v)
 }
 
