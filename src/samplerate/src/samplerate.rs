@@ -1,3 +1,5 @@
+#![feature(libc)]
+
 extern crate libc;
 
 use std::vec;
@@ -75,7 +77,7 @@ pub fn resample(din: Receiver<Vec<f32>>, dout: Sender<Vec<f32>>, ratio: f64) {
 		if error != 0 {
 			unsafe {
 				let error_msg_raw = src_strerror(error);
-				let error_msg_slice = ffi::c_str_to_bytes(&error_msg_raw);
+				let error_msg_slice = ffi::CStr::from_ptr(error_msg_raw).to_bytes();
 				panic!("{}", str::from_utf8(error_msg_slice).unwrap());
 			}
 		}
