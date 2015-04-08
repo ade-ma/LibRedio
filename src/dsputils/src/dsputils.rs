@@ -1,29 +1,29 @@
+#![feature(core)]
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
-extern crate num;
+extern crate core;
 
 // basic tools for type coercion and FIR filter creation, useful for DSP
 // mad props to Bob Maling for his work @ http://musicdsp.org/showArchiveComment.php?ArchiveID=194
-use std::num::*;
+use core::num::*;
+use std::cmp;
 use std::f32;
-use std::ops::*;
-use num::Zero;
 
 #[inline(always)]
 pub fn mean(xs: &[f64]) -> f64 {
 	let l = xs.len() as f64;
 	let s = xs.iter().fold(0f64, |sum, &x| { sum + x });
-	return (s/l);
+	return s/l;
 }
 
 #[inline(always)]
-pub fn max<T: Float>(xs: &[T]) -> T {
-	xs.iter().fold(xs[0], |a, &b| a.max(b))
+pub fn max<T: Float+Ord>(xs: &[T]) -> T {
+	xs.iter().fold(xs[0], |a, &b| cmp::max(a, b))
 }
 
 #[inline(always)]
-pub fn min<T: Float>(xs: &[T]) -> T {
-	xs.iter().fold(xs[0], |a, &b| a.min(b))
+pub fn min<T: Float+Ord>(xs: &[T]) -> T {
+	xs.iter().fold(xs[0], |a, &b| cmp::min(a, b))
 }
 
 #[inline(always)]
@@ -44,7 +44,7 @@ pub fn window(m: usize) -> Vec<f32> {
 	// let a: ~[f32] = ~[0.35875, 0.48829, 0.14128, 0.01168];
 	// hamming window coefficients
 	// let a: ~[f32] = ~[0.54, 0.46, 0.0, 0.0];
-	range(0, m + 1).map(|x| {
+	(0..m + 1).map(|x| {
 		let nn = x as f32;
 		a[0] - a[1]*(2f32*pi*n/(nn-1f32)).cos()+a[2]*(4f32*pi*n/(nn-1f32)).cos()-a[3]*(6f32*pi*n/(nn-1f32).cos())
 	}).collect()
@@ -54,7 +54,7 @@ pub fn sinc(m: usize, fc: f32) -> Vec<f32> {
 	// fc should always specify corner below nyquist
 	assert!(fc < 0.5);
 	let pi = f32::consts::PI;
-	range(0, m).map(|x| -> f32 {
+	(0..m).map(|x| -> f32 {
 		let n = x as f32 - m as f32/2f32;
 		let mut r = 2f32*fc;
 		if n != 0.0 { r = (2f32*pi*fc*n).sin()/(pi*n); }
