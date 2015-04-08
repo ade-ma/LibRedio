@@ -1,3 +1,4 @@
+#![feature(libc)]
 extern crate num;
 extern crate libc;
 
