@@ -1,11 +1,12 @@
+#![feature(libc)] 
+
 extern crate libc;
-extern crate core;
 
 use libc::{c_int, c_void, size_t};
 use std::ptr::null;
-use core::mem::transmute;
 use std::sync::mpsc::{Receiver,Sender,channel};
 use std::ffi::CString;
+use std::intrinsics::transmute;
 
 // opaque struct
 #[repr(C)]
@@ -46,7 +47,7 @@ pub fn pulse_source(c_data: Sender<Vec<f32>>, s_rate: usize, b_size: usize) {
 	// pa_stream_direction_t -> enum, record = 2, playback = 1
 	unsafe {
 		let mut error: c_int = 0;
-		let s = pa_simple_new(null(), CString::from_slice("rust-pa-simple-source".as_bytes()).as_bytes_with_nul(), 2, null(), CString::from_slice("pa-source".as_bytes()).as_bytes_with_nul(), &ss, null(), null(), &mut error);
+		let s = pa_simple_new(null(), CString::new("rust-pa-simple-source").unwrap().to_bytes_with_nul(), 2, null(), CString::new("pa-source").unwrap().to_bytes_with_nul(), &ss, null(), null(), &mut error);
 		assert_eq!(error, 0);
 		'main : loop {
 			let mut buffer: Vec<i16> = [0..b_size].iter().map(|_|0i16).collect();
@@ -62,7 +63,7 @@ pub fn pulse_sink(p_data: Receiver<Vec<f32>>, s_rate: usize) {
 	let ss = paSampleSpec { format: 5, rate: s_rate as u32, channels: 1 };
 	let mut error: c_int = 0;
 	unsafe {
-		let s = pa_simple_new(null(), CString::from_slice("rust-pa-simple-sink".as_bytes()).as_bytes_with_nul(), 1, null(), CString::from_slice("pa-sink".as_bytes()).as_bytes_with_nul(), &ss, null(), null(), &mut error);
+		let s = pa_simple_new(null(), CString::new("rust-pa-simple-sink").unwrap().to_bytes_with_nul(), 1, null(), CString::new("pa-sink").unwrap().to_bytes_with_nul(), &ss, null(), null(), &mut error);
 		println!("{}", pa_simple_get_latency(s, &mut error));
 		'main : loop {
 			let samps = p_data.recv().unwrap();
