@@ -1,14 +1,17 @@
+#![feature(old_io)]
+#![feature(core)]
+#![feature(std_misc)]
+
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of the GPLv3. */
 
 extern crate dsputils;
-extern crate num;
+extern crate core;
 
 use std::sync::mpsc::{Receiver, Sender, channel, Handle, Select};
 use std::iter::*;
-use std::num::{Float}; 
-use std::io::net::ip::{SocketAddr, Ipv4Addr};
-use std::io::{Listener, Acceptor};
+use core::num::{Float}; 
+use std::net::{SocketAddr, Ipv4Addr};
 
 // run length encoding
 pub fn rle<T: Eq+Clone+Send>(u: Receiver<T>, v: Sender<(T, usize)>) {
@@ -38,7 +41,7 @@ pub fn dle<T: Eq+Clone+Send>(u: Receiver<(T, usize)>, v: Sender<(T, f32)>, s_rat
 pub fn dld<T: Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, s_rate: f32) {
 	loop {
 		match u.recv().unwrap() {
-			(x, dur) => for _ in range(0, (dur*s_rate) as usize) {v.send(x.clone()).unwrap()},
+			(x, dur) => for _ in (0..(dur*s_rate) as usize) {v.send(x.clone()).unwrap()},
 		}
 	}
 }
@@ -47,7 +50,7 @@ pub fn dld<T: Clone+Send>(u: Receiver<(T, f32)>, v: Sender<T>, s_rate: f32) {
 pub fn rld<T: Eq+Clone+Send>(u: Receiver<(T, usize)>, v: Sender<T>) {
 	loop {
 		match u.recv().unwrap() {
-			(x, ct) => for _ in range(0, ct){v.send(x.clone()).unwrap()},
+			(x, ct) => for _ in (0..ct){v.send(x.clone()).unwrap()},
 		}
 	}
 }
@@ -58,7 +61,7 @@ pub fn decoder(u: Receiver<Vec<usize>>, v: Sender<Vec<usize>>, t: &[usize]) {
 		let p = u.recv().unwrap();
 		let i: usize = t.iter().map(|&x|x).sum();
 		if p.len() >= i {
-			let b = eat(p.slice_from(0), t);
+			let b = eat(&p[0..], t);
 			v.send(b).unwrap();
 		};
 	}
@@ -94,21 +97,21 @@ pub fn unpacketizer<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 }
 
 
-pub fn print_sink<T: std::fmt::String+Send>(u: Receiver<T>) {
+pub fn print_sink<T: std::fmt::Debug+Send>(u: Receiver<T>) {
 	loop {
-		println!("{}", u.recv().unwrap())
+		println!("{:?}", u.recv().unwrap())
 	}
 }
 
 pub fn b2d(xs: &[usize]) -> usize {
-	return range(0, xs.len()).map(|i| (1<<(xs.len()-i-1))*xs[i]).sum();
+	return (0..xs.len()).map(|i| (1<<(xs.len()-i-1))*xs[i]).sum();
 }
 
 pub fn eat(x: &[usize], is: &[usize]) -> Vec<usize> {
 	let mut i = 0;
 	let mut out: Vec<usize> = vec!();
 	for &index in is.iter() {
-		out.push(b2d(x.slice(i, i+index)));
+		out.push(b2d(&x[i..i+index]));
 		i = i + index;
 	}
 	return out
@@ -212,7 +215,7 @@ pub fn sum<T: Float+Send>(u: Receiver<T>, v: Sender<T>, c: T){
 }
 
 pub fn grapes<T: Send>(u: &[Receiver<T>], v: Sender<T>) {
-	let mut timer = std::io::Timer::new().unwrap();
+	let mut timer = std::old_io::Timer::new().unwrap();
 	loop {
 		for x in u.iter() {
 			match x.try_recv().unwrap() {
@@ -247,7 +250,7 @@ pub fn shaper_optional<T: Send+Clone>(u: Receiver<Option<T>>, v: Sender<Vec<T>>,
 
 pub fn shaper<T: Send+Clone>(u: Receiver<T>, v: Sender<Vec<T>>, l: usize) {
 	loop {
-		v.send(range(0, l).map(|_| u.recv().unwrap()).collect()).unwrap()
+		v.send((0..l).map(|_| u.recv().unwrap()).collect()).unwrap()
 	}
 }
 
@@ -261,7 +264,7 @@ pub fn shaper_vecs<T: Send+Clone>(u: Receiver<Vec<T>>, v: Sender<T>) {
 
 pub fn binconv(u: Receiver<Vec<usize>>, v: Sender<Vec<usize>>, l: &[usize]) {
 	loop {
-		v.send(eat(u.recv().unwrap().slice_from(0), l.clone())).unwrap()
+		v.send(eat(&u.recv().unwrap()[0..], l.clone())).unwrap()
 	}
 }
 
