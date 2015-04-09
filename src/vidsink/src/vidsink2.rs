@@ -1,11 +1,19 @@
+#![feature(core)]
+
 extern crate sdl2;
 extern crate dsputils;
+extern crate core;
 
+use std::num::*;
 use std::sync::mpsc::{Receiver, Sender, channel, Handle, Select};
 use std::thread::Thread;
 use std::intrinsics::floorf32;
+use sdl2::event::Event;
 
-pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
+pub fn draw_vector_as_barplot(renderer: &sdl2::render::Renderer, mut data: Vec<f32>) {
+	let drawer = renderer.drawer();
+	let mut renderer = drawer;
+	renderer.set_logical_size(1300, 600);
 	// downsample to 800px if needbe
 	let (sw, sh) = renderer.get_output_size().unwrap();
 	let len = data.len();
@@ -23,13 +31,13 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<
 	let width: f32 = sw as f32 / (data.len() as f32);
 	let height: f32 = sh as f32;
 	// find max value
-	let dmax = dsputils::max(data.slice_from(0));
-	let dmin = dsputils::min(data.slice_from(0));
+	let dmax = data.iter().fold(0.0, |x, &y| x.max(y));
+	let dmin = data.iter().fold(1.0, |x, &y| x.min(y));
 	// calculate height scale value
 	let scale: f32 = height / ((dmax-dmin));
 	let width = if width > 1.0 { width } else { 1.0 };
 	renderer.set_draw_color(sdl2::pixels::Color::RGB(0, 127, 7));
-	let rs: Vec<sdl2::rect::Rect> = range(0, data.len()).map(|i| {
+	let rs: Vec<sdl2::rect::Rect> = (0..data.len()).map(|i| {
 		let x = data[i];
 		let mut yf = if dmin > 0.0 { height } else {height*0.5f32};
 		let mut hf = scale*x;
@@ -41,10 +49,12 @@ pub fn draw_vector_as_barplot (renderer: &sdl2::render::Renderer, mut data: Vec<
 			w: width as i32,
 			h: hf as i32}
 	}).collect();
-	renderer.fill_rects(rs.slice_from(0));
+	renderer.fill_rects(&rs[0..]);
+	renderer.present();
 }
 
 pub fn vidsink_vecs(pDataC: Receiver<Vec<f32>>) {
+	let sdl_context = sdl2::init(sdl2::INIT_VIDEO).unwrap();
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => panic!("")
@@ -53,10 +63,13 @@ pub fn vidsink_vecs(pDataC: Receiver<Vec<f32>>) {
 		Ok(renderer) => renderer,
 		Err(err) => panic!("")
 	};
-	renderer.set_logical_size(1300, 600);
-	'main : loop {
-		match sdl2::event::poll_event() {
-			sdl2::event::Event::Quit(_) => break 'main,
+	let mut event_pump = sdl_context.event_pump();
+	let mut running = true;
+	while running {
+	for event in event_pump.poll_iter() {
+		use sdl2::event::Event;
+		match event {
+			Event::Quit {..} => {running = false;}
 			_ => {}
 		}
 		match pDataC.recv() {
@@ -65,11 +78,11 @@ pub fn vidsink_vecs(pDataC: Receiver<Vec<f32>>) {
 			}
 			_ => ()
 		}
-		renderer.present()
 	}
-	sdl2::quit();
+	}
 }
 pub fn vidsink(pDataC: Receiver<f32>, size: usize) {
+	let sdl_context = sdl2::init(sdl2::INIT_VIDEO).unwrap();
 	let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300, 600, sdl2::video::SHOWN) {
 		Ok(window) => window,
 		Err(err) => panic!("")
@@ -78,45 +91,49 @@ pub fn vidsink(pDataC: Receiver<f32>, size: usize) {
 		Ok(renderer) => renderer,
 		Err(err) => panic!("")
 	};
-	let mut data: Vec<f32> = range(0, size).map(|_|0f32).collect();
-	renderer.set_logical_size(1300, 600);
-	'main : loop {
-		match sdl2::event::poll_event() {
-			sdl2::event::Event::Quit(_) => break 'main,
+	let mut data: Vec<f32> = (0..size).map(|_|0f32).collect();
+	let mut event_pump = sdl_context.event_pump();
+	let mut running = true;
+	while running {
+	for event in event_pump.poll_iter() {
+		use sdl2::event::Event;
+		match event {
+			Event::Quit {..} => {running = false;}
 			_ => {}
 		}
 		data.pop();
 		data.insert(0, pDataC.recv().unwrap());
 		draw_vector_as_barplot(&renderer, data.clone());
-		renderer.present()
 	}
-	sdl2::quit();
+	}
 }
 pub fn many_vidsink(u: Vec<Receiver<Vec<f32>>>) {
-	sdl2::init(sdl2::INIT_VIDEO);
-	let l = u.len() as isize;
+	let sdl_context = sdl2::init(sdl2::INIT_VIDEO).unwrap();
+	let l = u.len() as i32;
 	for x in u.into_iter() {
 		let window =  match sdl2::video::Window::new("sdl2 vidsink", sdl2::video::WindowPos::PosCentered, sdl2::video::WindowPos::PosCentered, 1300/l, 600, sdl2::video::SHOWN) {
 			Ok(window) => window,
 			Err(err) => panic!("")
 		};
-		let renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::RenderDriverIndex::Auto, sdl2::render::SOFTWARE){
+		let mut renderer =  match sdl2::render::Renderer::from_window(window, sdl2::render::RenderDriverIndex::Auto, sdl2::render::SOFTWARE){
 			Ok(renderer) => renderer,
 			Err(err) => panic!("")
 		};
-		renderer.set_logical_size(1300/l, 600);
-		'main : loop {
-			match sdl2::event::poll_event() {
-				sdl2::event::Event::Quit(_) => break 'main,
+		let mut event_pump = sdl_context.event_pump();
+		let mut running = true;
+		while running {
+		for event in event_pump.poll_iter() {
+			use sdl2::event::Event;
+			match event {
+				Event::Quit {..} => {running = false;}
 				_ => {}
 			};
 			match x.recv() {
 				Ok(d) => draw_vector_as_barplot(&renderer, d),
 				Err(_) => {}
 			};
-			renderer.present();
-		};
-	    sdl2::quit();
+		}
+		}
 	}
 }
 

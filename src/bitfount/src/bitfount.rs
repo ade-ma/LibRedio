@@ -1,17 +1,21 @@
 /* Copyright Ian Daniher, 2013, 2014.
    Distributed under the terms of GPLv3. */
 
+#![feature(core)]
+#![feature(collections)]
+
 extern crate num;
 extern crate rtlsdr;
 extern crate dsputils;
 
 use num::complex::Complex;
 use std::sync::mpsc::{Receiver, Sender, channel, Handle, Select};
-use rtlsdr::RTLSDR_Dev;
+use rtlsdr::RtlSdrDev;
+use std::num::Float;
 
 pub fn rtl_source_cmplx(v: Sender<Vec<Complex<f32>>>, c_freq: u32, gain: u32, s_rate: u32) {
 	let block_size = 512;
-	let dev_handle = rtlsdr::RTLSDR_Dev::open();
+	let dev_handle = rtlsdr::RtlSdrDev::open();
 	dev_handle.set_sample_rate(s_rate);
 	dev_handle.clear_buffer();
 	dev_handle.set_gain(gain);
@@ -67,7 +71,7 @@ pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 
 		// if we're triggering, collect samples
 		if trigger > 1 {
-			sample_buffer.push_all(samples.slice_from(0));
+			sample_buffer.push_all(&samples[0..]);
 		}
 
 		// if we just finished triggering, filter, discretize, and send samples
@@ -83,7 +87,7 @@ pub fn trigger(u: Receiver<Vec<f32>>, v: Sender<Vec<f32>>) {
 pub fn discretize(u: Receiver<Vec<f32>>, v: Sender<usize>) {
 	loop {
 		let sample_buffer = u.recv().unwrap();
-		let max: f32 = dsputils::max(sample_buffer.slice_from(0));
+		let max = sample_buffer.iter().fold(0.0, |x, &y| x.max(y));
 		let thresholded: Vec<usize> = sample_buffer.iter().map(|&x| { (x > max/2f32) as usize }).collect();
 		for &x in thresholded.iter() {
 			v.send(x);
