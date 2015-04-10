@@ -41,8 +41,8 @@ path = "src/samplerate"
 [dependencies.vidsink]
 path = "src/vidsink"
 
-[dependencies.wavio]
-path = "src/wavio"
+#[dependencies.wavio]
+#path = "src/wavio"
 
 [[bin]]
 name = "ratpak"

@@ -1,6 +1,6 @@
 [root]
 name = "libredio"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "bitfount 0.0.2",
  "dsputils 0.0.2",
@@ -13,7 +13,6 @@ dependencies = [
  "time 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.1.20 (git+https://github.com/alexcrichton/toml-rs)",
  "vidsink 0.0.2",
- "wavio 0.0.2",
 ]
 
 [[package]]
@@ -138,11 +137,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sndfile"
-version = "0.0.1"
-source = "git+https://github.com/nwoeanhinnogaehr/rust-sndfile#da7d29a3970c85f761975ce1fe9937f75b682d54"
-
-[[package]]
 name = "time"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,13 +159,5 @@ version = "0.0.2"
 dependencies = [
  "dsputils 0.0.2",
  "sdl2 0.1.0 (git+https://github.com/AngryLawyer/rust-sdl2)",
-]
-
-[[package]]
-name = "wavio"
-version = "0.0.2"
-dependencies = [
- "num 0.1.22 (git+https://github.com/rust-lang/num)",
- "sndfile 0.0.1 (git+https://github.com/nwoeanhinnogaehr/rust-sndfile)",
 ]
 
