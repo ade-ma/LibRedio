@@ -1,10 +1,12 @@
 [package]
 name = "libredio"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Ian Daniher <itdaniher@gmail.com>"]
 
-[dependencies.usb]
-git = "https://github.com/kevinmehall/rust-usb"
+[dependencies.time]
+
+#[dependencies.usb]
+#git = "https://github.com/kevinmehall/rust-usb"
 
 [dependencies.toml]
 git = "https://github.com/alexcrichton/toml-rs"
@@ -24,8 +26,8 @@ path = "src/kissfft"
 [dependencies.kpn]
 path = "src/kpn"
 
-[dependencies.oblw]
-path = "src/oblw"
+#[dependencies.oblw]
+#path = "src/oblw"
 
 [dependencies.pasimple]
 path = "src/pasimple"
